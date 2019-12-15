@@ -24,7 +24,7 @@ class Preprocessor(object):
             * segmentation.npy (if with_masks)
     """
     def __init__(self, in_dir, out_dir, cases=None, kits_json_path=None,
-                 clip_values=[-30, 300], with_mask=False, fg_classes=[0, 1, 2],
+                 clip_values=[-30, 300], with_mask=True, fg_classes=[0, 1, 2],
                  resize_xy_shape=(256, 256)):
         """
         Attributes:
@@ -107,7 +107,8 @@ class Preprocessor(object):
                     shape: (n, x, y)
         """
         raw_case = Path(case).name # raw case name, i.e. case_00000
-        if self.target_spacing is not None:
+        # resampling
+        if self.kits_json is not None:
             for info_dict in self.kits_json:
                 # guaranteeing that the info is corresponding to the right
                 # case
@@ -234,16 +235,13 @@ class Preprocessor(object):
               f"{save_path}.")
         with open(save_path, "w") as fp:
             json.dump(self.pos_slice_dict, fp)
-        print("Logged slice indices for all fg classes instead of for each",
-              f"class separately at {save_path_general}.")
-        with open(save_path_general, "w") as fp:
-            json.dump(general_slice_dict, fp)
 
     def _load_kits_json(self, json_path):
         """
         Loads the kits.json file into `self.kits_json`
         """
         if json_path is None:
+            self.kits_json = None
             print("`kits_json_path is empty, so not resampling.`")
         elif json_path is not None:
             with open(json_path, "r") as fp:
