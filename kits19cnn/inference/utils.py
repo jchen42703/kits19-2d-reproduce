@@ -4,6 +4,22 @@ from os.path import join, isdir
 import numpy as np
 import nibabel as nib
 import torch
+from scipy.ndimage import label
+
+def remove_3D_connected_components(arr, min_size=5000):
+    """
+    Removes 3D components in an array. Edits the array in-place.
+    """
+    # Now, we perform region labelling. This way, every connected component
+    # will have their own colour value.
+    # label converted to a binary array so the connected components analysis runs
+    labelled_mask, num_labels = label((arr>0)*1)
+
+    # Let us now remove all the too small regions.
+    for label_idx in range(num_labels):
+        if np.sum(arr[labelled_mask == label_idx]) < min_size:
+            arr[labelled_mask == label_idx] = 0
+    return arr
 
 def load_weights_infer(checkpoint_path, model):
     """
