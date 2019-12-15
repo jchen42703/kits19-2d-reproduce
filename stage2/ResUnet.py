@@ -75,5 +75,4 @@ class ResidualBlock(nn.Module):
         out = self.relu(out)
         return out
 
-    def skipconnection(self, in_channels, out_channels, stride=1):
-        shortcut = conv1x1(in_channels,out_channels,stride)
+    
