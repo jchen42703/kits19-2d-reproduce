@@ -23,6 +23,7 @@ setup(name="kits19cnn",
             "torchvision>=0.4.0",
             "catalyst",
             "pytorch_toolbelt",
+            "albumentations>=0.3.0",
             "segmentation_models_pytorch==0.1.0",
       ],
       classifiers=[
