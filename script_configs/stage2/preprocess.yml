@@ -1,0 +1,17 @@
+    in_dir: /content/kits19/data
+    out_dir: /content/kits_preprocessed
+    cases: ~
+    kits_json_path: /content/kits19/data/kits.json
+    clip_values:
+        - -30
+        - 300
+    with_mask: True
+    fg_classes:
+        - 0
+        - 1
+        - 2
+    resize_xy_shape: ~
+
+## ON SUBMISSION SET
+    # with_mask: False
+    # fg_classes: ~
