@@ -1,8 +1,7 @@
 from catalyst.dl.runner import SupervisedRunner
 
 from kits19cnn.inference import Predictor
-from kits19cnn.experiments import SegmentationInferenceExperiment, \
-                                  SegmentationInferenceExperiment2D, \
+from kits19cnn.experiments import SegmentationInferenceExperiment2D, \
                                   seed_everything
 
 def main(config):
@@ -19,16 +18,7 @@ def main(config):
     seed = config["io_params"]["split_seed"]
     seed_everything(seed)
     dim = len(config["predict_3D_params"]["patch_size"])
-    mode = config["mode"].lower()
-    assert mode in ["classification", "segmentation"], \
-        "The `mode` must be one of ['classification', 'segmentation']."
-    if mode == "classification":
-        raise NotImplementedError
-    elif mode == "segmentation":
-        if dim == 2:
-            exp = SegmentationInferenceExperiment2D(config)
-        elif dim == 3:
-            exp = SegmentationInferenceExperiment(config)
+    exp = SegmentationInferenceExperiment2D(config)
 
     print(f"Seed: {seed}\nMode: {mode}")
     pred = Predictor(out_dir=config["out_dir"],
@@ -42,7 +32,7 @@ if __name__ == "__main__":
     import yaml
     import argparse
 
-    parser = argparse.ArgumentParser(description="For training.")
+    parser = argparse.ArgumentParser(description="For prediction.")
     parser.add_argument("--yml_path", type=str, required=True,
                         help="Path to the .yml config.")
     args = parser.parse_args()

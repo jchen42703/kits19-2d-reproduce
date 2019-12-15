@@ -1,8 +1,6 @@
 from catalyst.dl.runner import SupervisedRunner
 
-from kits19cnn.experiments import TrainSegExperiment, TrainClfSegExperiment3D, \
-                                  TrainSegExperiment2D, TrainClfSegExperiment2D, \
-                                  seed_everything
+from kits19cnn.experiments import TrainSegExperiment2D, seed_everything
 from kits19cnn.visualize import plot_metrics, save_figs
 
 def main(config):
@@ -18,23 +16,8 @@ def main(config):
     # setting up the train/val split with filenames
     seed = config["io_params"]["split_seed"]
     seed_everything(seed)
-    mode = config["mode"].lower()
-    assert mode in ["classification", "segmentation", "both"], \
-        "The `mode` must be one of ['classification', 'segmentation', 'both']."
-    if mode == "classification":
-        raise NotImplementedError
-    elif mode == "segmentation":
-        if config["dim"] == 2:
-            exp = TrainSegExperiment2D(config)
-        elif config["dim"] == 3:
-            exp = TrainSegExperiment(config)
-        output_key = "logits"
-    elif mode == "both":
-        if config["dim"] == 2:
-            exp = TrainClfSegExperiment2D(config)
-        elif config["dim"] == 3:
-            exp = TrainClfSegExperiment3D(config)
-        output_key = ["seg_logits", "clf_logits"]
+    exp = TrainSegExperiment2D(config)
+    output_key = "logits"
 
     print(f"Seed: {seed}\nMode: {mode}")
 

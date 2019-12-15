@@ -10,15 +10,14 @@ def main(config):
         None
     """
     evaluator = Evaluator(config["orig_img_dir"], config["pred_dir"],
-                          label_file_ending=config["label_file_ending"],
-                          binary_tumor=config["binary_tumor"])
+                          label_file_ending=config["label_file_ending"])
     evaluator.evaluate_all(print_metrics=config["print_metrics"])
 
 if __name__ == "__main__":
     import yaml
     import argparse
 
-    parser = argparse.ArgumentParser(description="For training.")
+    parser = argparse.ArgumentParser(description="For evaluation.")
     parser.add_argument("--yml_path", type=str, required=True,
                         help="Path to the .yml config.")
     args = parser.parse_args()
