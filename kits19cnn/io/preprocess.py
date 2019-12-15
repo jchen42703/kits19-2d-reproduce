@@ -126,8 +126,10 @@ class Preprocessor(object):
             image = np.clip(image, self.clip_values[0], self.clip_values[1])
 
         if self.resize_xy_shape is not None:
-            mask = mask[None] if mask is not None else mask
-            image, mask = resize_data_and_seg(image[None], size=self.resize_xy_shape,
+            # image coming in : shape (c, n, h, w); mask is same shape
+            zdim_size = image.shape[1]
+            resize_xy_shape = (zdim_size,) + self.resize_xy_shape
+            image, mask = resize_data_and_seg(image, size=resize_xy_shape,
                                               seg=mask)
         image = standardize_per_image(image)
         mask = mask.squeeze() if mask is not None else mask
