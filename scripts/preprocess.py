@@ -11,13 +11,13 @@ def main(config):
     Returns:
         None
     """
-    preprocess = Preprocessor(**config)
+    preprocess = Preprocessor(**config["preprocessor_params"])
     if len(os.listdir(config["out_dir"])) == 0:
         print("Preprocessing the 3D volumes first...")
-        preprocess.gen_data()
+        preprocess.gen_data(save_names=config["save_names"])
 
     print("Splitting the volumes into 2D numpy arrays...")
-    preprocess.save_dir_as_2d()
+    preprocess.save_dir_as_2d(base_names=config["base_names"])
 
 if __name__ == "__main__":
     import yaml
