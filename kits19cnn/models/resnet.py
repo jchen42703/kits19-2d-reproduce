@@ -1,7 +1,9 @@
 import torch.nn as nn
+
+from .neural_network import SegmentationNetwork
 from .utils import PreActResidualBlock
 
-class ResNetSeg(nn.Module):
+class ResNetSeg(SegmentationNetwork):
     """
     Used in Stage 2. Authors attribute it to this paper:
         van Harten, L., Noothout, J.M., Verhoeff, J., Wolterink, J.M.,
