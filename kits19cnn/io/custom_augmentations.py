@@ -27,3 +27,58 @@ def resize_data_and_seg(data, size, seg=None, order_data=3,
             target_seg[c] = resize_segmentation(seg[c], size,
                                                 order_seg, cval_seg)
     return target_data, target_seg
+
+# from https://github.com/MIC-DKFZ/nnUNet/blob/master/nnunet/preprocessing/cropping.py
+def get_bbox_from_mask(mask, outside_value=0):
+    """
+    Args:
+        mask (np.ndarray): shape must be 3D or greater. Assumes that the first
+            three dimensions are the spatial dims.
+    """
+    mask_voxel_coords = np.where(mask != outside_value)
+    minzidx = int(np.min(mask_voxel_coords[0]))
+    maxzidx = int(np.max(mask_voxel_coords[0])) + 1
+    minxidx = int(np.min(mask_voxel_coords[1]))
+    maxxidx = int(np.max(mask_voxel_coords[1])) + 1
+    minyidx = int(np.min(mask_voxel_coords[2]))
+    maxyidx = int(np.max(mask_voxel_coords[2])) + 1
+    return [[minzidx, maxzidx], [minxidx, maxxidx], [minyidx, maxyidx]]
+
+def expand_bbox_lbub(bbox_dims, length: int = 256):
+    """
+    Symmetrically expanding a part of a bounding box to `length`.
+    Args:
+        bbox_dims (list): [lower bound, upper bound]
+        length (int): to expand the lower bound and upper bound to
+    """
+    current_len = bbox_dims[1] - bbox_dims[0]
+    if current_len >= length:
+        return bbox_dims
+    else:
+        diff = length-current_len
+        if diff % 2 == 0:
+            return [bbox_dims[0]-diff//2, bbox_dims[1]+diff//2]
+        elif diff % 2 == 1:
+            # when odd, expanding the bbox more on the max-side
+            # - no particular reason, the offset is just 1 pixel anyways
+            return [bbox_dims[0]-diff//2-1, bbox_dims[1]+diff//2]
+
+def expand_bbox(total_bbox, bbox_lengths=[None, 256, 256]):
+    """
+    Symmetrically expands bounding box coordinates.
+    """
+    assert len(total_bbox) == 3, \
+        "Must be 3D."
+    expanded_bbox = []
+    for length, lbub in zip(bbox_lengths, total_bbox):
+        if length is None:
+            expanded_bbox.append(lbub)
+        else:
+            expanded = expand_bbox_lbub(lbub, length=length)
+            expanded_bbox.append(expanded)
+    return expanded_bbox
+
+def crop_to_bbox(image, bbox):
+    assert len(image.shape) == 3, "only supports 3d images"
+    resizer = (slice(bbox[0][0], bbox[0][1]), slice(bbox[1][0], bbox[1][1]), slice(bbox[2][0], bbox[2][1]))
+    return image[resizer]
