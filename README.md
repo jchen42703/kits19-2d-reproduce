@@ -20,6 +20,7 @@ Reproducing [Kidney tumor segmentation using an ensembling multi-stage deep lear
   * axial rotation (angle ∈ [−30◦, 30◦])
   * horizontal flip
   * central crop plus zoom were also employed on-the-fly on KT cases only
+    * Just did it on 66% of all cases
 
 #### Class Sampling
 * B (background), K (kidney), KT (kidney + tumor)
@@ -45,6 +46,23 @@ and channels.
 * 2.5D approach (5 total slices, 2 top, 2 bottom) with axial slices.
   * Predicting __only on central slice__.
   * Softmax predictions (0: background, 1: kidney, 2: kidney tumor)
+
+#### Stage 2
+![](images/stage2.png)
+Two architectures: ResU-Net and ResNet. The ResU-Net is the same as Stage 1's architecture.
+ResNet architecture is shown above.
+* 2.5D inputs (similar to Stage 1)
+* Dropout layer (p=0.5) and batch normalization with pre-activation were used throughout all the residual blocks.
+  * Not sure where the dropout layer is.
+
+#### Stage 3
+Ensembles predictions with Stage 2.
+
+### Post-Processing (General)
+A simple post-processing operation was carried out at the end of both the first and second stages.
+Removed 3D connected components less than or equal to 5000 pixels.
+
+#### Stage 1
 * Post-processing
   * Foreground classes merged after prediction.
   * The ROIs to segment for Stage 2 were extracted creating a bounding box to circumscribe the union
@@ -53,22 +71,12 @@ and channels.
   * After that, the bounding box was symmetrically expanded to reach the final size of 256×256 pixels.
     * Avoids interpolation process on the extracted images.
 
-### Stage 2
-![](images/stage2.png)
-Two architectures: ResU-Net and ResNet. The ResU-Net is the same as Stage 1's architecture.
-ResNet architecture is shown above.
-* 2.5D inputs (same as Stage 1)
+#### Stage 2
+* 2.5D inputs (similar to Stage 1)
   * image sub-portions at the original full resolution along x-y and an interpolated slice thickness at 3 mm.
-* Dropout layer (p=0.5) and batch normalization with pre-activation were used throughout all the residual blocks.
-  * Not sure where the dropout layer is.
 
-### Stage 3
-Ensembles predictions with Stage 2.
-
-### Post-Processing (General)
-A simple post-processing operation was carried out at the end of both the first and second stages.
-Removed 3D connected components less than or equal to 5000 pixels.
-
+#### Stage 3
+Ensembles predictions from Stage 2.
 
 ## Results
 

@@ -1,0 +1,24 @@
+    preprocessor_params:
+      in_dir: /content/kits19/data
+      out_dir: /content/kits_preprocessed
+      cases: ~
+      kits_json_path: /content/kits19/data/kits.json
+      clip_values:
+          - -30
+          - 300
+      with_mask: True
+      fg_classes:
+          - 0
+          - 1
+          - 2
+      resize_xy_shape: ~
+
+    save_names:
+        - imaging_cropped
+        - segmentation_cropped
+    base_names:
+        - imaging_cropped
+        - segmentation_cropped
+## ON SUBMISSION SET
+    # with_mask: False
+    # fg_classes: ~

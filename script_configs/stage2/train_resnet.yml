@@ -1,0 +1,67 @@
+  data_folder: /content/stage1_pred/
+
+  runner_params:
+    logdir: /content/logs/segmentation/
+    num_epochs: 250
+    fp16: False
+    verbose: True
+
+  io_params:
+    test_size: 0.2
+    split_seed: 42
+    batch_size: 32
+    num_workers: 2
+    aug_key: resnet
+    slice_indices_path: /content/kits_preprocessed/slice_indices.json # 2D
+    p_sampling:
+      - 0
+      - 0.5
+      - 0.5
+    pseudo_3D: True
+    num_pseudo_slices: 5
+
+  criterion_params:
+    loss: CrossEntropyLoss
+    CrossEntropyLoss:
+      weight:
+        - 0.2
+        - 0.25
+        - 0.55
+
+  model_params: ~
+
+  opt_params:
+    opt: Adam
+    Adam:
+      lr: 0.001
+      weight_decay: 0.1
+    scheduler_params:
+      scheduler: ReduceLROnPlateau
+      ReduceLROnPlateau:
+        factor: 0.15
+        patience: 30 #2
+        mode: min
+        verbose: True
+        threshold: 0.001
+        threshold_mode: abs
+
+  callback_params:
+    EarlyStoppingCallback:
+      patience: 60
+      min_delta: 0.001
+    AccuracyCallback:
+      activation: Softmax
+
+    checkpoint_params:
+      checkpoint_path: ~
+      mode: model_only
+
+  # specify if you want to save plotly plots as .pngs
+  ## Requires separate installation of xvfb on Colab.
+  # plot_params:
+  #   metrics:
+  #     - loss/epoch
+  #     # - ppv/class_0/epoch
+  #     # - f1/class_0/epoch
+  #     # - tpr/class_0/epoch
+  #   save_dir: /content/logs/segmentation/
