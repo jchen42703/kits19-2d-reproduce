@@ -7,8 +7,7 @@ import nibabel as nib
 import numpy as np
 import json
 
-from kits19cnn.io.resample import resample_patient
-from kits19cnn.io.custom_augmentations import resize_data_and_seg
+from kits19cnn.io import resample_patient, resize_data_and_seg, crop_to_bbox
 
 class Preprocessor(object):
     """
@@ -24,8 +23,8 @@ class Preprocessor(object):
             * segmentation.npy (if with_masks)
     """
     def __init__(self, in_dir, out_dir, cases=None, kits_json_path=None,
-                 clip_values=[-30, 300], with_mask=True, fg_classes=[0, 1, 2],
-                 resize_xy_shape=(256, 256)):
+                 bbox_json_path=None,, clip_values=[-30, 300], with_mask=True,
+                 fg_classes=[0, 1, 2], resize_xy_shape=(256, 256)):
         """
         Attributes:
             in_dir (str): directory with the input data. Should be the
@@ -34,6 +33,9 @@ class Preprocessor(object):
             cases: list of case folders to preprocess
             kits_json_path (str): path to the kits.json file in the kits19/data
                 directory. This only should be specfied if you're resampling.
+                Defaults to None.
+            bbox_json_path (str): path to the bbox_stage1.json file made from
+                stage1 post-processing. Triggers cropping to the bboxes.
                 Defaults to None.
             target_spacing (list/tuple): spacing to resample to
             clip_values (list, tuple): values you want to clip CT scans to.
@@ -48,6 +50,7 @@ class Preprocessor(object):
         self.out_dir = out_dir
 
         self._load_kits_json(kits_json_path)
+        self._load_bbox_json(bbox_json_path)
         self.clip_values = clip_values
         self.with_mask = with_mask
         self.fg_classes = fg_classes
@@ -69,12 +72,14 @@ class Preprocessor(object):
             print("Created directory: {0}".format(out_dir))
         self.resize_xy_shape = resize_xy_shape
 
-    def gen_data(self):
+    def gen_data(self, save_names=["imaging", "segmentation"]):
         """
         Generates and saves preprocessed data as numpy arrays (n, x, y).
         Args:
             task_path: file path to the task directory
                 (must have the corresponding "dataset.json" in it)
+            save_names (List[str]): save names for [image, seg] respectively.
+                DOESN'T INCLUDE THE .npy
         Returns:
             None
         """
@@ -87,8 +92,12 @@ class Preprocessor(object):
             preprocessed_img, preprocessed_label = self.preprocess(image,
                                                                    label,
                                                                    case)
-
-            self.save_imgs(preprocessed_img, preprocessed_label, case)
+            if self.bbox_dict is not None:
+                preprocessed_img, preprocessed_label = self.crop_case_to_bbox(preprocessed_img,
+                                                                              preprocessed_label,
+                                                                              case)
+            self.save_imgs(preprocessed_img, preprocessed_label, case,
+                           save_names=save_names)
 
     def preprocess(self, image, mask, case=None):
         """
@@ -135,14 +144,20 @@ class Preprocessor(object):
         mask = mask.squeeze() if mask is not None else mask
         return (image.squeeze(), mask)
 
-    def save_imgs(self, image, mask, case):
+    def save_imgs(self, image, mask, case,
+                  save_names=["imaging", "segmentation"]):
         """
         Saves an image and mask pair as .npy arrays in the KiTS19 file structure
         Args:
             image: numpy array
             mask: numpy array
             case: path to a case folder (each element of self.cases)
+            save_names (List[str]): save names for [image, seg] respectively.
+                DOESN'T INCLUDE THE .npy
         """
+        for fname in save_names:
+            assert not ".npy" in fname, \
+                "Filenames in save_names should not include .npy in the name."
         # saving the generated dataset
         # output dir in KiTS19 format
         # extracting the raw case folder name
@@ -152,22 +167,30 @@ class Preprocessor(object):
         if not isdir(out_case_dir):
             os.mkdir(out_case_dir)
 
-        np.save(os.path.join(out_case_dir, "imaging.npy"), image)
+        np.save(os.path.join(out_case_dir, f"{save_names[0]}.npy"), image)
         if mask is not None:
-            np.save(os.path.join(out_case_dir, "segmentation.npy"), mask)
+            np.save(os.path.join(out_case_dir, f"{save_names[1]}.npy"), mask)
 
-    def save_dir_as_2d(self):
+    def save_dir_as_2d(self, base_fnames=["imaging", "segmentation"]):
         """
         Takes preprocessed 3D numpy arrays and saves them as slices
         in the same directory.
         Arrays must have shape (n, h, w).
+
+        Args:
+            base_fnames (List[str]): names to read for [image, seg] respectively.
+                DOESN'T INCLUDE THE .npy
         """
+        for fname in base_names:
+            assert not ".npy" in fname, \
+                "Filenames in save_names should not include .npy in the name."
+
         self.pos_slice_dict = {}
         # Generating data and saving them recursively
         for case in tqdm(self.cases):
             # assumes the .npy files have shape: (d, h, w)
-            image = np.load(join(case, "imaging.npy"))
-            label = np.load(join(case, "segmentation.npy"))
+            image = np.load(join(case, f"{base_fnames[0]}.npy"))
+            label = np.load(join(case, f"{base_fnames[1]}.npy"))
             self.save_3d_as_2d(image, label, case)
         if self.fg_classes is not None:
             self._save_pos_slice_dict()
@@ -248,6 +271,23 @@ class Preprocessor(object):
         elif json_path is not None:
             with open(json_path, "r") as fp:
                 self.kits_json = json.load(fp)
+
+    def _load_bbox_json(self, json_path):
+        """
+        Loads the kits.json file into `self.kits_json`
+        """
+        if json_path is None:
+            self.bbox_dict = None
+            print("bbox_json_path, so not cropping volumes to their bbox.")
+        with open(json_path, "r") as fp:
+            self.bbox_dict = json.load(fp)
+
+    def crop_case_to_bbox(self, image, label, case):
+        """
+        Crops a 3D image and 3D label to the corresponding bounding box.
+        """
+        bbox_coord = self.bbox_dict[case]
+        return (crop_to_bbox(image, bbox), crop_to_bbox(label, case))
 
 def standardize_per_image(image):
     """
