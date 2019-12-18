@@ -41,8 +41,9 @@ class PreActResidualBlock(nn.Module):
         self.conv1x1 = nn.Conv2d(input_feature_channels,
                                  output_feature_channels,
                                  kernel_size=1, stride=first_conv_stride,
-                                 padding=1)
+                                 padding=0)
         self.bottleneck = bottleneck
+        self.output_channels = output_feature_channels
 
     def forward(self, x):
         out = self.bnreluconv1(x)
@@ -55,23 +56,23 @@ class UpsamplingBlock(nn.Module):
     """
     Transposed Conv2d + Pre-Activation Residual Block
     """
-    def __init__(self, input_feature_channels, output_feature_channels,
-                 skip_layer):
+    def __init__(self, input_feature_channels, output_feature_channels):
 
         super(UpsamplingBlock, self).__init__()
         self.conv_up = nn.ConvTranspose2d(input_feature_channels,
                                           input_feature_channels,
-                                          kernel_size=3, stride=1, padding=1,
+                                          kernel_size=2, stride=2, padding=0,
                                           bias=False)
-        self.skip_layer = skip_layer
-
-        self.resblock = PreActResidualBlock(input_feature_channels,
+        # note: output_feature_channels = number of channels in skip connection
+        skip_and_input_channels = output_feature_channels+input_feature_channels
+        self.resblock = PreActResidualBlock(skip_and_input_channels,
                                             output_feature_channels,
                                             downsampling=False,
                                             bottleneck=True)
+        self.output_channels = output_feature_channels
 
-    def forward(self, x):
+    def forward(self, x, skip_layer):
         upsampled = self.conv_up(x)
-        skip_concat = torch.cat([upsampled, self.skip_layer], dim=1)
+        skip_concat = torch.cat([upsampled, skip_layer], dim=1)
         res_output = self.resblock(skip_concat)
         return res_output
