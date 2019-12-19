@@ -51,9 +51,9 @@ and channels.
 ![](images/stage2.png)
 Two architectures: ResU-Net and ResNet. The ResU-Net is the same as Stage 1's architecture.
 ResNet architecture is shown above.
-* 2.5D inputs (similar to Stage 1)
-* Dropout layer (p=0.5) and batch normalization with pre-activation were used throughout all the residual blocks.
-  * Not sure where the dropout layer is.
+* 2.5D inputs (same as Stage 1)
+  * image sub-portions at the original full resolution along x-y and an interpolated slice thickness at 3 mm.
+* Dropout is located right after each convolution (BN-ReLU-Conv-Dropout) according to the authors.
 
 #### Stage 3
 Ensembles predictions with Stage 2.
