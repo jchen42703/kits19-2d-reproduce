@@ -44,9 +44,11 @@ class ResUNet(SegmentationNetwork):
         self.conv_blocks_context = []
         self.conv_blocks_localization = []
 
+        self.first_conv = nn.Conv2d(input_channels, base_num_features//2,
+                                    kernel_size=3, padding=1)
         # Setting up the context pathway (downsampling)
         output_features = base_num_features
-        input_features = input_channels
+        input_features = self.first_conv.out_channels
 
         for d in range(num_pool):
             # add convolutions
@@ -87,6 +89,7 @@ class ResUNet(SegmentationNetwork):
     def forward(self, x):
         skips = []
         seg_outputs = []
+        x = self.first_conv(x)
         # iterating through the # of context blocks except the center bottleneck
         for d in range(len(self.conv_blocks_context) - 1):
             x = self.conv_blocks_context[d](x)
