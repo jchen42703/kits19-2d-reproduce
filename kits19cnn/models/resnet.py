@@ -12,11 +12,14 @@ class ResNetSeg(SegmentationNetwork):
         In: SegTHOR@ ISBI. (2019)
     """
     def __init__(self, channels_in=5):
+        super(ResNetSeg, self).__init__()
+
         conv_params = {"kernel_size": 3, "stride": 2, "padding": 1}
-        upsample_params = {"kernel_size": 2, "stride": 2, "padding": 1}
+        upsample_params = {"kernel_size": 2, "stride": 2, "padding": 0}
+        conv7x7_params = {"kernel_size": 7, "stride": 1, "padding": 3}
 
         self.downsample = nn.Sequential(*[
-            nn.Conv2d(channels_in, 16, kernel_size=7, stride=1, padding=1),
+            nn.Conv2d(channels_in, 16, **conv7x7_params),
             nn.Conv2d(16, 32, **conv_params),
             nn.Conv2d(32, 64, **conv_params)
         ])
@@ -30,7 +33,7 @@ class ResNetSeg(SegmentationNetwork):
             nn.ConvTranspose2d(64, 32, **upsample_params),
             nn.ConvTranspose2d(32, 3, **upsample_params),
         ])
-        self.out_conv = nn.Conv2d(3, 3, kernel_size=7, stride=1, padding=0)
+        self.out_conv = nn.Conv2d(3, 3, **conv7x7_params)
 
     def forward(self, x):
         downsampled = self.downsample(x)
