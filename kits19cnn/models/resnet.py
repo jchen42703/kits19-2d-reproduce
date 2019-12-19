@@ -25,7 +25,8 @@ class ResNetSeg(SegmentationNetwork):
         ])
 
         self.center_resblocks = nn.Sequential(*[
-            PreActResidualBlock(64, 64, downsampling=False, bottleneck=False)
+            PreActResidualBlock(64, 64, downsampling=False, bottleneck=False,
+                                dropout=True)
             for i in range(16)
         ])
 
