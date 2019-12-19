@@ -28,7 +28,7 @@ class PreActResidualBlock(nn.Module):
     Pre-Activation Residual Block with convolutional downsampling support.
     """
     def __init__(self, input_feature_channels, output_feature_channels,
-                 downsampling=True, bottleneck=True):
+                 downsampling=True, bottleneck=True, dropout=False):
 
         super(PreActResidualBlock, self).__init__()
         first_conv_stride = 2 if downsampling else 1
@@ -44,10 +44,17 @@ class PreActResidualBlock(nn.Module):
                                  padding=0)
         self.bottleneck = bottleneck
         self.out_channels = output_feature_channels
+        self.drop1 = nn.Dropout2d(p=0.5)
+        self.drop2 = nn.Dropout2d(p=0.5)
+        self.dropout = dropout
 
     def forward(self, x):
         out = self.bnreluconv1(x)
+        if self.dropout:
+            out = self.drop1(out)
         out = self.bnreluconv2(out)
+        if self.dropout:
+            out = self.drop2(out)
         identity = self.conv1x1(x) if self.bottleneck else x
         identity += out
         return identity
@@ -56,7 +63,8 @@ class UpsamplingBlock(nn.Module):
     """
     Transposed Conv2d + Pre-Activation Residual Block
     """
-    def __init__(self, input_feature_channels, output_feature_channels):
+    def __init__(self, input_feature_channels, output_feature_channels,
+                 dropout=False):
 
         super(UpsamplingBlock, self).__init__()
         self.conv_up = nn.ConvTranspose2d(input_feature_channels,
@@ -68,7 +76,7 @@ class UpsamplingBlock(nn.Module):
         self.resblock = PreActResidualBlock(skip_and_input_channels,
                                             output_feature_channels,
                                             downsampling=False,
-                                            bottleneck=True)
+                                            bottleneck=True, dropout=dropout)
         self.out_channels = output_feature_channels
 
     def forward(self, x, skip_layer):
