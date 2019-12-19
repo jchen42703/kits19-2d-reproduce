@@ -11,7 +11,7 @@ class ResNetSeg(SegmentationNetwork):
         scans by combining 2d and 3d convolutional neural networks.
         In: SegTHOR@ ISBI. (2019)
     """
-    def __init__(self, channels_in=5):
+    def __init__(self, input_channels=5):
         super(ResNetSeg, self).__init__()
 
         conv_params = {"kernel_size": 3, "stride": 2, "padding": 1}
@@ -19,7 +19,7 @@ class ResNetSeg(SegmentationNetwork):
         conv7x7_params = {"kernel_size": 7, "stride": 1, "padding": 3}
 
         self.downsample = nn.Sequential(*[
-            nn.Conv2d(channels_in, 16, **conv7x7_params),
+            nn.Conv2d(input_channels, 16, **conv7x7_params),
             nn.Conv2d(16, 32, **conv_params),
             nn.Conv2d(32, 64, **conv_params)
         ])
@@ -40,3 +40,10 @@ class ResNetSeg(SegmentationNetwork):
         center = self.center_resblocks(downsampled)
         upsampled = self.upsample(center)
         return self.out_conv(upsampled)
+
+if __name__ == "__main__":
+    model = ResNetSeg(input_channels=5)
+    # calculating # of parameters
+    total = sum(p.numel() for p in model.parameters())
+    trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    print(f"Total # of Params: {total}\nTrainable params: {trainable}")
