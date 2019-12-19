@@ -74,13 +74,13 @@ class ResUNet(SegmentationNetwork):
         for u in range(num_pool):
             nfeatures_from_down = final_num_features
             # self.conv_blocks_context[-1] is bottleneck, so start with -2
-            nfeatures_from_skip = self.conv_blocks_context[-(2 + u)].output_channels
+            nfeatures_from_skip = self.conv_blocks_context[-(2 + u)].out_channels
             self.conv_blocks_localization.append(UpsamplingBlock(nfeatures_from_down,
                                                                  nfeatures_from_skip))
             final_num_features = nfeatures_from_skip
 
         # register all modules properly
-        self.seg_output = nn.Conv2d(self.conv_blocks_localization[-1].output_channels,
+        self.seg_output = nn.Conv2d(self.conv_blocks_localization[-1].out_channels,
                                     num_classes, kernel_size=1, stride=1,
                                     padding=0, bias=False)
         self.conv_blocks_localization = nn.ModuleList(self.conv_blocks_localization)

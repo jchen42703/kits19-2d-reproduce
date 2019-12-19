@@ -43,7 +43,7 @@ class PreActResidualBlock(nn.Module):
                                  kernel_size=1, stride=first_conv_stride,
                                  padding=0)
         self.bottleneck = bottleneck
-        self.output_channels = output_feature_channels
+        self.out_channels = output_feature_channels
 
     def forward(self, x):
         out = self.bnreluconv1(x)
@@ -69,7 +69,7 @@ class UpsamplingBlock(nn.Module):
                                             output_feature_channels,
                                             downsampling=False,
                                             bottleneck=True)
-        self.output_channels = output_feature_channels
+        self.out_channels = output_feature_channels
 
     def forward(self, x, skip_layer):
         upsampled = self.conv_up(x)
