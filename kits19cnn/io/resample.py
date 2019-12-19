@@ -19,6 +19,8 @@ from scipy.ndimage.interpolation import map_coordinates
 import numpy as np
 from batchgenerators.augmentations.utils import resize_segmentation
 
+RESAMPLING_SEPARATE_Z_ANISOTROPY_THRESHOLD = 3
+
 def get_do_separate_z(spacing):
     do_separate_z = (np.max(spacing) / np.min(spacing)) > RESAMPLING_SEPARATE_Z_ANISOTROPY_THRESHOLD
     return do_separate_z
@@ -32,19 +34,24 @@ def resample_patient(data, seg, original_spacing, target_spacing, order_data=3,
                      order_seg=0, force_separate_z=False,
                      cval_data=0, cval_seg=0, order_z_data=0, order_z_seg=0):
     """
-    :param cval_seg:
-    :param cval_data:
-    :param data:
-    :param seg:
-    :param original_spacing:
-    :param target_spacing:
-    :param order_data:
-    :param order_seg:
-    :param force_separate_z: if None then we dynamically decide how to resample along z, if True/False then always
-    /never resample along z separately
-    :param order_z_seg: only applies if do_separate_z is True
-    :param order_z_data: only applies if do_separate_z is True
-    :return:
+    Args:
+        data: must be shape (c, x, y, z)
+        seg: must be shape (c, x, y, z)
+        original_spacing: spacing of data and seg (only spatial dimensions)
+        target_spacing: spacing to resample to
+        order_data: Order to resize the data. Defaults to 3 (Bi-cubic).
+            Refer to https://scikit-image.org/docs/dev/api/skimage.transform.html#skimage.transform.warp
+            as reference.
+        order_seg: Order to resize the data. Defaults to 1 (Bi-linear).
+        force_separate_z: if None then we dynamically decide how to resample
+        along z, if True/False then always/never resample along z separately
+        cval_data: constant value for padding the data.
+        cval_seg: constant value for padding the segmentation.
+        order_z_data: only applies if do_separate_z is True
+        order_z_seg: only applies if do_separate_z is True
+    Returns:
+        data_reshaped, seg_reshaped
+        (resampled arrays, if not None)
     """
     assert not ((data is None) and (seg is None))
     if data is not None:

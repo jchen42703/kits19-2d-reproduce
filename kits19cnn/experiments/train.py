@@ -7,6 +7,7 @@ from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader
 import torch
 
+from torch.nn import BCELoss, BCEWithLogitsLoss, CrossEntropyLoss
 from kits19cnn.loss_functions import DC_and_CE_loss, BCEDiceLoss, \
                                      SegClfBCEDiceLoss
 from .utils import get_preprocessing, get_training_augmentation, \
@@ -163,19 +164,15 @@ class TrainExperiment(object):
         """
         Fetches the criterion. (Only one loss.)
         """
-        loss_name = self.criterion_params["loss"].lower()
-        loss_dict = {
-            "bce_dice_loss": BCEDiceLoss(eps=1.),
-            "bce": torch.nn.BCEWithLogitsLoss(),
-            "ce_dice_loss": DC_and_CE_loss(soft_dice_kwargs={}, ce_kwargs={}),
-            "segclfbcediceloss": SegClfBCEDiceLoss(),
-        }
-        # re-initializing criterion with kwargs
-        loss_kwargs = self.criterion_params.get(loss_name)
-        loss_kwargs = {} if loss_kwargs is None else loss_kwargs
-
-        loss = loss_dict[loss_name]
-        loss.__init__(**loss_kwargs)
+        loss_name = self.criterion_params["loss"]
+        loss_kwargs = self.criterion_params[loss_name]
+        if "weight" in list(loss_kwargs.keys()):
+            if isinstance(loss_kwargs["weight"], list):
+                print(f"Converted the `weight` argument in {loss_name}",
+                      " to a torch.Tensor...")
+                loss_kwargs["weight"] = torch.tensor(loss_kwargs["weight"])
+        loss_cls = globals()[loss_name]
+        loss = loss_cls(**loss_kwargs)
         print(f"Criterion: {loss}")
         return loss
 
