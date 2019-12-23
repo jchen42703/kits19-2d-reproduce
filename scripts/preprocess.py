@@ -22,9 +22,9 @@ def main(config):
     if len(os.listdir(config["preprocessor_params"]["out_dir"])) == 0:
         print("Preprocessing the 3D volumes first...")
         preprocess.gen_data(save_fnames=config["save_fnames"])
-
-    print("Splitting the volumes into 2D numpy arrays...")
-    preprocess.save_dir_as_2d(base_fnames=config["base_fnames"])
+    if config["save_dir_as_2d"]:
+        print("Splitting the volumes into 2D numpy arrays...")
+        preprocess.save_dir_as_2d(base_fnames=config["base_fnames"])
 
 if __name__ == "__main__":
     import yaml

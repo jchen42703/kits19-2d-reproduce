@@ -16,6 +16,7 @@
           - 256
 
     mode: train
+    save_dir_as_2d: False # True if you want to do everything back to back
     save_fnames:
         - imaging
         - segmentation
