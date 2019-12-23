@@ -28,7 +28,7 @@ class SliceIDSampler(object):
         self.random_state = random_state
 
         self.total_num_slices = len(self.cases_slice_list)
-        self.classes = list(range(self.num_classes))
+        self.classes = np.array(range(self.num_classes))
 
         assert np.sum(classes_ratio) == 1, \
             "classes_ratio must add up to 1."
@@ -49,7 +49,7 @@ class SliceIDSampler(object):
         final_cases_slice_list = []
         freq_distr = self.find_new_slice_freq_distribution()
         # sampling the actual case_slice names based on the sampled frequency distribution
-        for class_label, freq in enumerate(freq_distr):
+        for label_idx, freq in enumerate(freq_distr):
             for i in range(freq):
                 sampled_name = np.random.choice(self.classes_dict[label_idx])
                 final_cases_slice_list.append(sampled_name)
