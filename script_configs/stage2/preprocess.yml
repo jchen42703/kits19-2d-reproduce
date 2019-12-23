@@ -13,12 +13,14 @@
           - 2
       resize_xy_shape: ~
 
-    save_names:
+    mode: train
+    save_fnames:
         - imaging_cropped
         - segmentation_cropped
-    base_names:
+    base_fnames:
         - imaging_cropped
         - segmentation_cropped
 ## ON SUBMISSION SET
     # with_mask: False
     # fg_classes: ~
+    # mode: test

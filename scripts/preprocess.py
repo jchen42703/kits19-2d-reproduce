@@ -12,6 +12,13 @@ def main(config):
         None
     """
     preprocess = Preprocessor(**config["preprocessor_params"])
+
+    if config["mode"] == "train":
+        # Training set is the first 210 cases
+        preprocess.cases = sorted(preprocess.cases)[:210]
+    elif config["mode"] == "test":
+        preprocess.cases = sorted(preprocess.cases)[210:]
+
     if len(os.listdir(config["preprocessor_params"]["out_dir"])) == 0:
         print("Preprocessing the 3D volumes first...")
         preprocess.gen_data(save_fnames=config["save_fnames"])
