@@ -73,13 +73,13 @@ class Preprocessor(object):
             print("Created directory: {0}".format(out_dir))
         self.resize_xy_shape = tuple(resize_xy_shape)
 
-    def gen_data(self, save_names=["imaging", "segmentation"]):
+    def gen_data(self, save_fnames=["imaging", "segmentation"]):
         """
         Generates and saves preprocessed data as numpy arrays (n, x, y).
         Args:
             task_path: file path to the task directory
                 (must have the corresponding "dataset.json" in it)
-            save_names (List[str]): save names for [image, seg] respectively.
+            save_fnames (List[str]): save names for [image, seg] respectively.
                 DOESN'T INCLUDE THE .npy
         Returns:
             None
@@ -98,7 +98,7 @@ class Preprocessor(object):
                                                                               preprocessed_label,
                                                                               case)
             self.save_imgs(preprocessed_img, preprocessed_label, case,
-                           save_names=save_names)
+                           save_fnames=save_fnames)
 
     def preprocess(self, image, mask, case=None):
         """
@@ -153,12 +153,12 @@ class Preprocessor(object):
             image: numpy array
             mask: numpy array
             case: path to a case folder (each element of self.cases)
-            save_names (List[str]): save names for [image, seg] respectively.
+            save_fnames (List[str]): save names for [image, seg] respectively.
                 DOESN'T INCLUDE THE .npy
         """
         for fname in save_fnames:
             assert not ".npy" in fname, \
-                "Filenames in save_names should not include .npy in the name."
+                "Filenames in save_fnames should not include .npy in the name."
         # saving the generated dataset
         # output dir in KiTS19 format
         # extracting the raw case folder name
@@ -184,7 +184,7 @@ class Preprocessor(object):
         """
         for fname in base_fnames:
             assert not ".npy" in fname, \
-                "Filenames in save_names should not include .npy in the name."
+                "Filenames in base_fnames should not include .npy in the name."
 
         self.pos_per_class_dict = {} # saves slices per class
         self.pos_per_slice_dict = defaultdict(list) # saves classes per slice
