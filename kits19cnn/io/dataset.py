@@ -4,7 +4,7 @@ import numpy as np
 
 import torch
 from torch.utils.data import Dataset
-from kits19cnn.io.preprocess import parse_slice_idx_to_str
+from .preprocess import parse_slice_idx_to_str
 
 class SliceDataset(Dataset):
     """
@@ -48,7 +48,7 @@ class SliceDataset(Dataset):
     def __len__(self):
         return len(self.im_ids)
 
-    def apply_transforms_and_preprocessing(x, y):
+    def apply_transforms_and_preprocessing(self, x, y):
         """
         Function name ^, if applicable.
         Input arrays must be in channels_last format for albumentations
@@ -82,7 +82,7 @@ class SliceDataset(Dataset):
             Note: the parsed slice index is just the raw integer slice index
             with leading zeros until the total number of digits == 5.
         """
-        case, slice_idx_str = case_slice_idx_str.split("_")
+        case, slice_idx_str = case_slice_idx_str.rsplit("_", 1)
         case_fpath = join(self.in_dir, case)
         return (case_fpath, slice_idx_str)
 
@@ -136,7 +136,7 @@ class PseudoSliceDataset(SliceDataset):
             return (center_x, center_y)
         elif self.num_pseudo_slices > 1:
             # total shape: (h, w, num_pseudo_slices)
-            x_arr = np.zeros(center_x.shape[:-1], (self.num_pseudo_slices,))
+            x_arr = np.zeros(center_x.shape[:-1] + (self.num_pseudo_slices,))
             for idx, slice_idx in enumerate(range(min, max)):
                 slice_idx_str = parse_slice_idx_to_str(slice_idx)
                 x_path = join(case_fpath, f"imaging_{slice_idx_str}.npy")
