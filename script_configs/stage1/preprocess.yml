@@ -15,12 +15,14 @@
           - 256
           - 256
 
-    save_names:
+    mode: train
+    save_fnames:
         - imaging
         - segmentation
-    base_names:
+    base_fnames:
         - imaging
         - segmentation
 ## ON SUBMISSION SET
     # with_mask: False
     # fg_classes: ~
+    # mode: test

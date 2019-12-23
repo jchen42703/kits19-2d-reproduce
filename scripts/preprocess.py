@@ -3,7 +3,7 @@ from kits19cnn.io import Preprocessor
 
 def main(config):
     """
-    Main code for training a classification/seg/classification+seg model.
+    Main code for preprocessing the data.
 
     Args:
         config (dict): dictionary read from a yaml file
@@ -12,12 +12,19 @@ def main(config):
         None
     """
     preprocess = Preprocessor(**config["preprocessor_params"])
-    if len(os.listdir(config["out_dir"])) == 0:
+
+    if config["mode"] == "train":
+        # Training set is the first 210 cases
+        preprocess.cases = sorted(preprocess.cases)[:210]
+    elif config["mode"] == "test":
+        preprocess.cases = sorted(preprocess.cases)[210:]
+
+    if len(os.listdir(config["preprocessor_params"]["out_dir"])) == 0:
         print("Preprocessing the 3D volumes first...")
-        preprocess.gen_data(save_names=config["save_names"])
+        preprocess.gen_data(save_fnames=config["save_fnames"])
 
     print("Splitting the volumes into 2D numpy arrays...")
-    preprocess.save_dir_as_2d(base_names=config["base_names"])
+    preprocess.save_dir_as_2d(base_fnames=config["base_fnames"])
 
 if __name__ == "__main__":
     import yaml

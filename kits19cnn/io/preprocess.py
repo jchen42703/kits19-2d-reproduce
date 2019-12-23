@@ -7,7 +7,8 @@ import nibabel as nib
 import numpy as np
 import json
 
-from kits19cnn.io import resample_patient, resize_data_and_seg, crop_to_bbox
+from .resample import resample_patient
+from .custom_augmentations import resize_data_and_seg, crop_to_bbox
 
 class Preprocessor(object):
     """
@@ -23,7 +24,7 @@ class Preprocessor(object):
             * segmentation.npy (if with_masks)
     """
     def __init__(self, in_dir, out_dir, cases=None, kits_json_path=None,
-                 bbox_json_path=None,, clip_values=[-30, 300], with_mask=True,
+                 bbox_json_path=None, clip_values=[-30, 300], with_mask=True,
                  fg_classes=[0, 1, 2], resize_xy_shape=(256, 256)):
         """
         Attributes:
@@ -70,7 +71,7 @@ class Preprocessor(object):
         if not isdir(out_dir):
             os.mkdir(out_dir)
             print("Created directory: {0}".format(out_dir))
-        self.resize_xy_shape = resize_xy_shape
+        self.resize_xy_shape = tuple(resize_xy_shape)
 
     def gen_data(self, save_names=["imaging", "segmentation"]):
         """
@@ -145,7 +146,7 @@ class Preprocessor(object):
         return (image.squeeze(), mask)
 
     def save_imgs(self, image, mask, case,
-                  save_names=["imaging", "segmentation"]):
+                  save_fnames=["imaging", "segmentation"]):
         """
         Saves an image and mask pair as .npy arrays in the KiTS19 file structure
         Args:
@@ -155,21 +156,21 @@ class Preprocessor(object):
             save_names (List[str]): save names for [image, seg] respectively.
                 DOESN'T INCLUDE THE .npy
         """
-        for fname in save_names:
+        for fname in save_fnames:
             assert not ".npy" in fname, \
                 "Filenames in save_names should not include .npy in the name."
         # saving the generated dataset
         # output dir in KiTS19 format
         # extracting the raw case folder name
-        case = Path(case).name
-        out_case_dir = join(self.out_dir, case)
+        case_raw = Path(case).name # extracting the raw case folder name
+        out_case_dir = join(self.out_dir, case_raw)
         # checking to make sure that the output directories exist
         if not isdir(out_case_dir):
             os.mkdir(out_case_dir)
 
-        np.save(os.path.join(out_case_dir, f"{save_names[0]}.npy"), image)
+        np.save(os.path.join(out_case_dir, f"{save_fnames[0]}.npy"), image)
         if mask is not None:
-            np.save(os.path.join(out_case_dir, f"{save_names[1]}.npy"), mask)
+            np.save(os.path.join(out_case_dir, f"{save_fnames[1]}.npy"), mask)
 
     def save_dir_as_2d(self, base_fnames=["imaging", "segmentation"]):
         """
@@ -181,63 +182,69 @@ class Preprocessor(object):
             base_fnames (List[str]): names to read for [image, seg] respectively.
                 DOESN'T INCLUDE THE .npy
         """
-        for fname in base_names:
+        for fname in base_fnames:
             assert not ".npy" in fname, \
                 "Filenames in save_names should not include .npy in the name."
 
-        self.pos_slice_dict = {}
+        self.pos_per_class_dict = {} # saves slices per class
+        self.pos_per_slice_dict = defaultdict(list) # saves classes per slice
         # Generating data and saving them recursively
         for case in tqdm(self.cases):
+            # output dir in KiTS19 format
+            case_raw = Path(case).name # extracting the raw case folder name
+            out_case_dir = join(self.out_dir, case_raw)
+            # checking to make sure that the output directories exist
+            if not isdir(out_case_dir):
+                os.mkdir(out_case_dir)
             # assumes the .npy files have shape: (d, h, w)
-            image = np.load(join(case, f"{base_fnames[0]}.npy"))
-            label = np.load(join(case, f"{base_fnames[1]}.npy"))
-            self.save_3d_as_2d(image, label, case)
+            image = np.load(join(out_case_dir, f"{base_fnames[0]}.npy"))
+            label = np.load(join(out_case_dir, f"{base_fnames[1]}.npy"))
+            self.save_3d_as_2d(image, label, case_raw, out_case_dir)
         if self.fg_classes is not None:
             self._save_pos_slice_dict()
 
-    def save_3d_as_2d(self, image, mask, case):
+    def save_3d_as_2d(self, image, mask, case_raw, out_case_dir):
         """
-        Saves an image and mask pair as .npy arrays in the
-        KiTS19 file structure
+        Saves a 3D volume as separate 2D arrays for each slice across the
+        axial axis. The naming convention is as follows:
+            imaging_{parsed_slice_idx}.npy
+            segmentation_{parsed_slice_idx}.npy
+            where parsed_slice_idx is just the slice index but filled with
+            zeros until it hits 5 digits (so sorting is easier.)
         Args:
             image: numpy array
             mask: numpy array
-            case: path to a case folder (each element of self.cases)
+            case: raw case folder name
         """
         # saving the generated dataset
-        # output dir in KiTS19 format
-        # extracting the raw case folder name
-        case = Path(case).name
-        out_case_dir = join(self.out_dir, case)
-        # checking to make sure that the output directories exist
-        if not isdir(out_case_dir):
-            os.mkdir(out_case_dir)
-
         # iterates through all slices and saves them individually as 2D arrays
-        fg_indices = defaultdict(list)
         assert len(image.shape) == 3, \
             "Image shape should be (n, h, w)"
 
+        slice_idx_per_class = defaultdict(list)
         for slice_idx in range(image.shape[0]):
-            # appending fg slice indices
+            # naming
+            slice_idx_str = parse_slice_idx_to_str(slice_idx)
+            case_str = f"{case_raw}_{slice_idx_str}"
+
             if mask is not None:
                 label_slice = mask[slice_idx]
+            # appending fg slice indices
+            if self.fg_classes is not None:
+                for label_idx in self.fg_classes:
+                    if label_idx != 0 and (label_slice == label_idx).any():
+                        slice_idx_per_class[label_idx].append(slice_idx)
+                        self.pos_per_slice_dict[case_str].append(label_idx)
+                    elif label_idx == 0 and np.sum(label_slice) == 0:
+                        # for completely blank labels
+                        slice_idx_per_class[label_idx].append(slice_idx)
+                        self.pos_per_slice_dict[case_str].append(label_idx)
 
-            for idx in self.fg_classes:
-                if idx != 0 and (label_slice == idx).any():
-                    fg_indices[idx].append(slice_idx)
-                elif idx == 0 and np.sum(label_slice) == 0:
-                    # for completely blank labels
-                    fg_indices[idx].append(slice_idx)
+            self._save_slices(image, mask, out_case_dir=out_case_dir,
+                              slice_idx=slice_idx, slice_idx_str=slice_idx_str)
 
-            slice_idx_str = parse_slice_idx_to_str(slice_idx)
-            np.save(join(out_case_dir, f"imaging_{slice_idx_str}.npy"),
-                    image[slice_idx])
-            if mask is not None:
-                np.save(join(out_case_dir, f"segmentation_{slice_idx_str}.npy"),
-                        label_slice)
-        # {case1: [idx1, idx2,...], case2: ...}
-        self.pos_slice_dict[case] = fg_indices
+        if self.fg_classes is not None:
+            self.pos_per_class_dict[case_raw] = slice_idx_per_class
 
     def _save_pos_slice_dict(self):
         """
@@ -249,17 +256,39 @@ class Preprocessor(object):
                                fg_class2: [slice indices...],
                                ...}
                     }
-            - slice_indices_general.json
-                saves the slice indices for all foreground classes into a
-                    single list
-                    {case: [slice indices...],}
+            - classes_per_slice.json
+                the keys are not cases, but the actual filenames that are
+                being read.
+                    {
+                        case_slice_idx_str: [classes_in_slice],
+                        case_slice_idx_str2: [classes_in_slice],
+                    }
         """
+        save_path_per_slice = join(self.out_dir, "classes_per_slice.json")
+        # saving the dictionaries
+        print(f"Logged the classes in {self.fg_classes} for each slice at",
+              f"{save_path_per_slice}.")
+        with open(save_path_per_slice, "w") as fp:
+            json.dump(self.pos_per_slice_dict, fp)
+
         save_path = join(self.out_dir, "slice_indices.json")
         # saving the dictionaries
-        print(f"Logged the slice indices for each class in {self.fg_classes} at"
+        print(f"Logged the slice indices for each class in {self.fg_classes} at",
               f"{save_path}.")
         with open(save_path, "w") as fp:
-            json.dump(self.pos_slice_dict, fp)
+            json.dump(self.pos_per_class_dict, fp)
+
+    def _save_slices(self, image, mask, out_case_dir, slice_idx,
+                     slice_idx_str):
+        """
+        For saving the slices in self.save_3d_as_2d()
+        """
+        np.save(join(out_case_dir, f"imaging_{slice_idx_str}.npy"),
+                image[slice_idx])
+        if mask is not None:
+            label_slice = mask[slice_idx]
+            np.save(join(out_case_dir, f"segmentation_{slice_idx_str}.npy"),
+                    label_slice)
 
     def _load_kits_json(self, json_path):
         """
@@ -279,8 +308,9 @@ class Preprocessor(object):
         if json_path is None:
             self.bbox_dict = None
             print("bbox_json_path, so not cropping volumes to their bbox.")
-        with open(json_path, "r") as fp:
-            self.bbox_dict = json.load(fp)
+        else:
+            with open(json_path, "r") as fp:
+                self.bbox_dict = json.load(fp)
 
     def crop_case_to_bbox(self, image, label, case):
         """
@@ -296,7 +326,7 @@ def standardize_per_image(image):
     mean, stddev = image.mean(), image.std()
     return (image - mean) / stddev
 
-def parse_slice_idx_to_str(self, slice_idx):
+def parse_slice_idx_to_str(slice_idx):
     """
     Parse the slice index to a three digit string for saving and reading the
     2D .npy files generated by io.preprocess.Preprocessor.
