@@ -12,11 +12,11 @@
     batch_size: 32
     num_workers: 2
     aug_key: resunet1
-    slice_indices_path: /content/kits_preprocessed/slice_indices.json # 2D
-    p_sampling:
+    classes_per_slice_path: /content/kits_preprocessed/classes_per_slice.json
+    sampling_distribution:
       - 0.33
       - 0.33
-      - 0.33
+      - 0.34
     pseudo_3D: True
     num_pseudo_slices: 5
 
@@ -28,7 +28,14 @@
         - 1.0
         - 3.0
 
-  model_params: ~
+  model_params:
+    model_name: ResUNet
+    ResUNet:
+      input_channels: 5
+      base_num_features: 16
+      num_classes: 3
+      num_pool: 4
+      max_num_features: 256
 
   opt_params:
     opt: Adam
@@ -36,14 +43,7 @@
       lr: 0.0001
       weight_decay: 0.1
     scheduler_params:
-      scheduler: ReduceLROnPlateau
-      ReduceLROnPlateau:
-        factor: 0.15
-        patience: 30 #2
-        mode: min
-        verbose: True
-        threshold: 0.001
-        threshold_mode: abs
+      scheduler: ~
 
   callback_params:
     EarlyStoppingCallback:
