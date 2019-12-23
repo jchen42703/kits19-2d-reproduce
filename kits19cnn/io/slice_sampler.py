@@ -35,6 +35,7 @@ class SliceIDSampler(object):
         print(f"Randomly sampling {self.total_num_slices} slices to match the",
               f"distribution, {self.classes_ratio}, with",
               f"classes, {self.classes}, and seed, {self.random_state}.")
+        self.parse_dict()
 
     def sample_slices_names(self):
         """
