@@ -43,13 +43,12 @@ def get_validation_augmentation(augmentation_key):
     print(f"\nTest/Validation Transforms: {test_transform}")
     return albu.Compose(test_transform)
 
-def get_preprocessing(rgb: bool = False):
+def get_preprocessing():
     """
     Construct preprocessing transform
 
     Args:
-        rgb (bool): Whether or not to return the input with three channels
-            or just single (grayscale)
+        None
     Return:
         transform: albumentations.Compose
     """
