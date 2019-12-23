@@ -15,10 +15,10 @@
           - 256
           - 256
 
-    save_names:
+    save_fnames:
         - imaging
         - segmentation
-    base_names:
+    base_fnames:
         - imaging
         - segmentation
 ## ON SUBMISSION SET
