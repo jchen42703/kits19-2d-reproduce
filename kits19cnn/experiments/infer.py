@@ -1,5 +1,4 @@
 from glob import glob
-from tqdm import tqdm
 from abc import abstractmethod
 import os
 
@@ -8,9 +7,6 @@ from torch.utils.data import DataLoader
 from sklearn.model_selection import train_test_split
 
 from kits19cnn.io import TestVoxelDataset
-from kits19cnn.utils import softmax_helper
-from kits19cnn.models import Generic_UNet
-from .utils import get_preprocessing
 
 class BaseInferenceExperiment(object):
     def __init__(self, config: dict):
