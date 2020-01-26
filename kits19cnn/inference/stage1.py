@@ -48,7 +48,7 @@ class Stage1Predictor(BasePredictor):
                 "model must have the method `predict_3D`"
         self.pseudo_3D = pseudo_3D
         self.pseudo_3D_params = pseudo_3D_params
-        self.bbox_coords = bbox_coords
+        self.bbox_coords = {}
 
     def run_3D_predictions(self, min_size=5000):
         """
