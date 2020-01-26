@@ -42,10 +42,3 @@ class SegmentationInferenceExperiment2D(BaseInferenceExperiment):
         print(f"Total # of Params: {total}\nTrainable params: {trainable}")
 
         return model
-
-        # calculating # of parameters
-        total = sum(p.numel() for p in model.parameters())
-        trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
-        print(f"Total # of Params: {total}\nTrainable params: {trainable}")
-
-        return model.cuda()
