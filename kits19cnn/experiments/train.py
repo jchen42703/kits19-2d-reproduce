@@ -9,9 +9,9 @@ import torch
 import json
 
 from torch.nn import BCELoss, BCEWithLogitsLoss, CrossEntropyLoss
+from catalyst.utils import get_device, any2device
 from kits19cnn.io import SliceIDSampler
-from kits19cnn.loss_functions import DC_and_CE_loss, BCEDiceLoss, \
-                                     SegClfBCEDiceLoss
+from kits19cnn.loss_functions import *
 from .utils import get_preprocessing, get_training_augmentation, \
                   get_validation_augmentation, seed_everything
 
@@ -179,9 +179,11 @@ class TrainExperiment(object):
         loss_kwargs = self.criterion_params[loss_name]
         if "weight" in list(loss_kwargs.keys()):
             if isinstance(loss_kwargs["weight"], list):
+                weight_tensor = torch.tensor(loss_kwargs["weight"])
+                weight_tensor = any2device(weight_tensor, get_device())
                 print(f"Converted the `weight` argument in {loss_name}",
-                      " to a torch.Tensor...")
-                loss_kwargs["weight"] = torch.tensor(loss_kwargs["weight"])
+                      f" to a {weight_tensor.type()}...")
+                loss_kwargs["weight"] = weight_tensor
         loss_cls = globals()[loss_name]
         loss = loss_cls(**loss_kwargs)
         print(f"Criterion: {loss}")
