@@ -1,0 +1,34 @@
+  in_dir: C:\\Users\\Joseph\\Desktop\\kits19_preprocessed\\data
+  out_dir: C:\\Users\\Joseph\\Desktop\\kits19_predictions
+  with_masks: True
+  mode: segmentation
+  checkpoint_path: C:\\Users\\Joseph\\Desktop\\stage1resunet_23epochs_last_full.pth
+  pseudo_3D: True
+
+  io_params:
+    test_size: 0.2
+    split_seed: 200
+    batch_size: 1
+    num_workers: 2
+    file_ending: .npy # nii.gz
+
+  model_params:
+    model_name: ResUNet
+    ResUNet:
+      input_channels: 5
+      base_num_features: 16
+      num_classes: 3
+      num_pool: 4
+      max_num_features: 256
+
+  predict_3D_params:
+    do_mirroring: True
+    num_repeats: 1
+    min_size: ~
+    batch_size: 1
+    mirror_axes:
+      - 0
+      - 1
+    regions_class_order: ~ # this is argmax
+    pseudo3D_slices: 5
+    all_in_gpu: False
