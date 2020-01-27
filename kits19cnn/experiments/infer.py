@@ -93,13 +93,10 @@ class BaseInferenceExperiment(object):
                                   shuffle=False, num_workers=num_workers)
         return {"test": test_loader}
 
-    def load_weights(self, callbacks_list):
+    def load_weights(self):
         """
-        Loads model weights and appends the CheckpointCallback if doing
-        stateful model loading. This doesn't add the CheckpointCallback if
-        it's 'model_only' loading bc SupervisedRunner adds it by default.
+        Loads model weights.
         """
         checkpoint_path = self.config["checkpoint_path"]
         print(f"Loading {checkpoint_path} into model...")
-        self.model = load_weights_infer(ckpoint_params["checkpoint_path"],
-                                        self.model)
+        self.model = load_weights_infer(checkpoint_path, self.model)
