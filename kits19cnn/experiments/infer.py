@@ -6,6 +6,7 @@ import torch
 from torch.utils.data import DataLoader
 from sklearn.model_selection import train_test_split
 
+from kits19cnn.inference.utils import load_weights_infer
 from kits19cnn.io import TestVoxelDataset
 
 class BaseInferenceExperiment(object):
@@ -38,6 +39,7 @@ class BaseInferenceExperiment(object):
         self.test_dset = self.get_datasets(test_ids)
         self.loaders = self.get_loaders()
         self.model = self.get_model()
+        self.load_weights()
 
     @abstractmethod
     def get_datasets(self, test_ids):
@@ -90,3 +92,14 @@ class BaseInferenceExperiment(object):
         test_loader = DataLoader(self.test_dset, batch_size=b_size,
                                   shuffle=False, num_workers=num_workers)
         return {"test": test_loader}
+
+    def load_weights(self, callbacks_list):
+        """
+        Loads model weights and appends the CheckpointCallback if doing
+        stateful model loading. This doesn't add the CheckpointCallback if
+        it's 'model_only' loading bc SupervisedRunner adds it by default.
+        """
+        checkpoint_path = self.config["checkpoint_path"]
+        print(f"Loading {checkpoint_path} into model...")
+        self.model = load_weights_infer(ckpoint_params["checkpoint_path"],
+                                        self.model)

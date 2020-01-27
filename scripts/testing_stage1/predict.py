@@ -17,12 +17,10 @@ def main(config):
     # setting up the train/val split with filenames
     seed = config["io_params"]["split_seed"]
     seed_everything(seed)
-    dim = len(config["predict_3D_params"]["patch_size"])
     exp = SegmentationInferenceExperiment2D(config)
 
     print(f"Seed: {seed}\nMode: {mode}")
     pred = General3DPredictor(out_dir=config["out_dir"],
-                              checkpoint_path=config["checkpoint_path"],
                               model=exp.model, test_loader=exp.loaders["test"],
                               pred_3D_params=config["predict_3D_params"],
                               pseudo_3D=config.get("pseudo_3D"))

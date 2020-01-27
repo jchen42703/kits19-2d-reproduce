@@ -13,12 +13,11 @@ class General3DPredictor(BasePredictor):
     removing small 3D connected components.
 
     """
-    def __init__(self, out_dir, checkpoint_path, model, test_loader,
+    def __init__(self, out_dir, model, test_loader,
                  pseudo_3D=True, pred_3D_params={"do_mirroring": True}):
         """
         Attributes
             out_dir (str): path to the output directory to store predictions
-            checkpoint_path (str): path to a model checkpoint for `model`
             model (torch.nn.Module): class with the `predict_3D` method for
                 predicting a single patient volume.
             test_loader: Iterable instance for generating data
@@ -27,8 +26,7 @@ class General3DPredictor(BasePredictor):
             pred_3D_params (dict): kwargs for `model.predict_3D`
             pseudo_3D (bool): whether or not to have pseudo 3D inputs
         """
-        super().__init__(out_dir=out_dir, checkpoint_path=checkpoint_path,
-                         model=model, test_loader=test_loader)
+        super().__init__(out_dir=out_dir, model=model, test_loader=test_loader)
         assert inspect.ismethod(model.predict_3D), \
                 "model must have the method `predict_3D`"
         if pseudo_3D:
