@@ -2,7 +2,6 @@ import torch
 
 from kits19cnn.utils import softmax_helper
 from kits19cnn.models import ResUNet, ResNetSeg
-from .utils import get_preprocessing
 from kits19cnn.io import TestVoxelDataset
 from .infer import BaseInferenceExperiment
 
@@ -22,11 +21,8 @@ class SegmentationInferenceExperiment2D(BaseInferenceExperiment):
         """
         Creates and returns the test dataset.
         """
-        preprocess_t = get_preprocessing()
         # creating the datasets
         test_dataset = TestVoxelDataset(im_ids=test_ids,
-                                        transforms=None,
-                                        preprocessing=preprocess_t,
                                         file_ending=self.io_params["file_ending"])
         return test_dataset
 

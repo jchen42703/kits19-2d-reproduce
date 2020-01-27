@@ -9,15 +9,9 @@ class VoxelDataset(Dataset):
         """
         Attributes
             im_ids (np.ndarray): of image names.
-            transforms (albumentations.augmentation): transforms to apply
-                before preprocessing. Defaults to HFlip and ToTensor
-            preprocessing: ops to perform after transforms, such as
-                z-score standardization. Defaults to None.
             file_ending (str): one of ['.npy', '.nii', '.nii.gz']
         """
         self.im_ids = im_ids
-        self.transforms = transforms
-        self.preprocessing = preprocessing
         self.file_ending = file_ending
         print(f"Using the {file_ending} files...")
 
@@ -63,10 +57,6 @@ class TestVoxelDataset(VoxelDataset):
         """
         Attributes
             im_ids (np.ndarray): of image names.
-            transforms (albumentations.augmentation): transforms to apply
-                before preprocessing. Defaults to HFlip and ToTensor
-            preprocessing: ops to perform after transforms, such as
-                z-score standardization. Defaults to None.
             file_ending (str): one of ['.npy', '.nii', '.nii.gz']
         """
         super().__init__(im_ids=im_ids, file_ending=file_ending)
