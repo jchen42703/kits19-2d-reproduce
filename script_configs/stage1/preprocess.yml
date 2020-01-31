@@ -1,8 +1,8 @@
     preprocessor_params:
-      in_dir: /content/kits19/data
-      out_dir: /content/kits_preprocessed
+      in_dir: C:\Users\jchen\kits19\data #/content/kits19/data
+      out_dir: C:\Users\jchen\Desktop\Datasets\kits_reproduced_from_raw #/content/kits_preprocessed
       cases: ~
-      kits_json_path: /content/kits19/data/kits.json
+      kits_json_path: C:\Users\jchen\kits19\data\kits.json #/content/kits19/data/kits.json
       clip_values:
           - -30
           - 300
@@ -16,6 +16,7 @@
           - 256
 
     mode: train
+    preprocess: True
     save_dir_as_2d: False # True if you want to do everything back to back
     save_fnames:
         - imaging
