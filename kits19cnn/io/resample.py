@@ -195,5 +195,5 @@ def resample_data_or_seg(data, new_shape, is_seg, axis=None, order=3,
             reshaped_final_data = np.vstack(reshaped)
         return reshaped_final_data.astype(dtype_data)
     else:
-        print("no resampling necessary")
+        # print("no resampling necessary")
         return data
