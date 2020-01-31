@@ -419,9 +419,14 @@ class SegmentationNetwork(NeuralNetwork):
         softmax_pred = []
         for s in range(data.shape[1]):
             pred_seg, bayesian_predictions, softmax_pres, uncertainty = \
-                self._internal_predict_2D_2Dconv_tiled(data[:, s], num_repeats, BATCH_SIZE, step, do_mirroring,
-                                                       mirror_axes, patch_size, regions_class_order, use_gaussian,
-                                                       pad_border_mode=pad_border_mode, pad_kwargs=pad_kwargs)
+                self._internal_predict_2D_2Dconv_tiled(data[:, s], num_repeats,
+                                                       BATCH_SIZE, step,
+                                                       do_mirroring,
+                                                       mirror_axes, patch_size,
+                                                       regions_class_order,
+                                                       use_gaussian,
+                                                       pad_border_mode=pad_border_mode,
+                                                       pad_kwargs=pad_kwargs)
             predicted_segmentation.append(pred_seg[None])
             softmax_pred.append(softmax_pres[None])
         predicted_segmentation = np.vstack(predicted_segmentation)
