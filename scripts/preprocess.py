@@ -13,15 +13,19 @@ def main(config):
     """
     preprocess = Preprocessor(**config["preprocessor_params"])
 
-    if config["mode"] == "train":
-        # Training set is the first 210 cases
-        preprocess.cases = sorted(preprocess.cases)[:210]
-    elif config["mode"] == "test":
-        preprocess.cases = sorted(preprocess.cases)[210:]
+    if config["preprocessor_params"]["cases"] is None:
+        if config["mode"] == "train":
+            # Training set is the first 210 cases
+            preprocess.cases = sorted(preprocess.cases)[:210]
+        elif config["mode"] == "test":
+            preprocess.cases = sorted(preprocess.cases)[210:]
+    else:
+        preprocess.cases = config["preprocessor_params"]["cases"]
 
-    if len(os.listdir(config["preprocessor_params"]["out_dir"])) == 0:
+    if config["preprocess"]:
         print("Preprocessing the 3D volumes first...")
         preprocess.gen_data(save_fnames=config["save_fnames"])
+
     if config["save_dir_as_2d"]:
         print("Splitting the volumes into 2D numpy arrays...")
         preprocess.save_dir_as_2d(base_fnames=config["base_fnames"])
