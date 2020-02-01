@@ -8,6 +8,7 @@ from sklearn.model_selection import train_test_split
 
 from kits19cnn.inference.utils import load_weights_infer
 from kits19cnn.io import TestVoxelDataset
+from catalyst.utils import get_device
 
 class BaseInferenceExperiment(object):
     def __init__(self, config: dict):
@@ -38,8 +39,9 @@ class BaseInferenceExperiment(object):
         print(f"Inferring on {len(test_ids)} test cases")
         self.test_dset = self.get_datasets(test_ids)
         self.loaders = self.get_loaders()
-        self.model = self.get_model()
+        self.model = self.get_model().to(get_device())
         self.load_weights()
+        print(f"Device: {get_device()}")
 
     @abstractmethod
     def get_datasets(self, test_ids):
@@ -72,15 +74,18 @@ class BaseInferenceExperiment(object):
         # setting up the train/val split with filenames
         split_seed: int = self.io_params["split_seed"]
         test_size: float = self.io_params["test_size"]
-        # doing the splits: 1-test_size, test_size//2, test_size//2
-        print("Splitting the dataset normally...")
-        train_ids, total_test = train_test_split(self.case_list,
+        if test_size == 1:
+            return (None, None, self.case_list)
+        else:
+            # doing the splits: 1-test_size, test_size//2, test_size//2
+            print("Splitting the dataset normally...")
+            train_ids, total_test = train_test_split(self.case_list,
+                                                     random_state=split_seed,
+                                                     test_size=test_size)
+            val_ids, test_ids = train_test_split(sorted(total_test),
                                                  random_state=split_seed,
-                                                 test_size=test_size)
-        val_ids, test_ids = train_test_split(sorted(total_test),
-                                             random_state=split_seed,
-                                             test_size=0.5)
-        return (train_ids, val_ids, test_ids)
+                                                 test_size=0.5)
+            return (train_ids, val_ids, test_ids)
 
     def get_loaders(self):
         """
