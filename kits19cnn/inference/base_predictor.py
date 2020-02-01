@@ -21,6 +21,7 @@ class BasePredictor(object):
             test_loader: Iterable instance for generating data
                 (pref. torch DataLoader)
         """
+        self.model = model
         self.out_dir = out_dir
         if not isdir(self.out_dir):
             os.mkdir(self.out_dir)
