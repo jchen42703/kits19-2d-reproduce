@@ -19,7 +19,7 @@ def main(config):
     seed_everything(seed)
     exp = SegmentationInferenceExperiment2D(config)
 
-    print(f"Seed: {seed}\nMode: {mode}")
+    print(f"Seed: {seed}")
     pred = General3DPredictor(out_dir=config["out_dir"],
                               model=exp.model, test_loader=exp.loaders["test"],
                               pred_3D_params=config["predict_3D_params"],
