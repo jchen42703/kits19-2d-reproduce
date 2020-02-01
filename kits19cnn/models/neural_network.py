@@ -367,8 +367,8 @@ class SegmentationNetwork(NeuralNetwork):
                                                  BATCH_SIZE, mirror_axes,
                                                  regions_class_order,
                                                  pad_border_mode, pad_kwargs)
-            predicted_segmentation.append(pred_seg[None])
-            softmax_pred.append(softmax_pres[None])
+            predicted_segmentation.append(pred_seg[None].cpu().numpy())
+            softmax_pred.append(softmax_pres[None].cpu().numpy())
         predicted_segmentation = np.vstack(predicted_segmentation)
         softmax_pred = np.vstack(softmax_pred).transpose((1, 0, 2, 3))
         return predicted_segmentation, None, softmax_pred, None
@@ -397,8 +397,8 @@ class SegmentationNetwork(NeuralNetwork):
                                                  min_size, BATCH_SIZE,
                                                  mirror_axes,
                                                  regions_class_order)
-            predicted_segmentation.append(pred_seg[None])
-            softmax_pred.append(softmax_pres[None])
+            predicted_segmentation.append(pred_seg[None].cpu().numpy())
+            softmax_pred.append(softmax_pres[None].cpu().numpy())
         predicted_segmentation = np.vstack(predicted_segmentation)
         softmax_pred = np.vstack(softmax_pred).transpose((1, 0, 2, 3))
 
@@ -427,8 +427,8 @@ class SegmentationNetwork(NeuralNetwork):
                                                        use_gaussian,
                                                        pad_border_mode=pad_border_mode,
                                                        pad_kwargs=pad_kwargs)
-            predicted_segmentation.append(pred_seg[None])
-            softmax_pred.append(softmax_pres[None])
+            predicted_segmentation.append(pred_seg[None].cpu().numpy())
+            softmax_pred.append(softmax_pres[None].cpu().numpy())
         predicted_segmentation = np.vstack(predicted_segmentation)
         softmax_pred = np.vstack(softmax_pred).transpose((1, 0, 2, 3))
         return predicted_segmentation, None, softmax_pred, None
