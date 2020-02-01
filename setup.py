@@ -22,6 +22,8 @@ setup(name="kits19cnn",
             "torch>=1.2.0",
             "torchvision>=0.4.0",
             "catalyst",
+            "batchgenerators",
+            "segmentation_models_pytorch>=0.1.0",
             "albumentations>=0.3.0",
       ],
       classifiers=[
