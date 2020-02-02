@@ -1,6 +1,6 @@
 from catalyst.dl.runner import SupervisedRunner
 
-from kits19cnn.inference import Predictor
+from kits19cnn.inference import Stage1Predictor
 from kits19cnn.experiments import SegmentationInferenceExperiment2D, \
                                   seed_everything
 
@@ -17,15 +17,13 @@ def main(config):
     # setting up the train/val split with filenames
     seed = config["io_params"]["split_seed"]
     seed_everything(seed)
-    dim = len(config["predict_3D_params"]["patch_size"])
     exp = SegmentationInferenceExperiment2D(config)
 
-    print(f"Seed: {seed}\nMode: {mode}")
-    pred = Predictor(out_dir=config["out_dir"],
-                     checkpoint_path=config["checkpoint_path"],
-                     model=exp.model, test_loader=exp.loaders["test"],
-                     pred_3D_params=config["predict_3D_params"],
-                     pseudo_3D=config.get("pseudo_3D"))
+    print(f"Seed: {seed}")
+    pred = Stage1Predictor(out_dir=config["out_dir"],
+                           model=exp.model, test_loader=exp.loaders["test"],
+                           pred_3D_params=config["predict_3D_params"],
+                           pseudo_3D=config.get("pseudo_3D"))
     pred.run_3D_predictions()
 
 if __name__ == "__main__":
