@@ -44,8 +44,11 @@ class Stage1Predictor(BasePredictor):
         super().__init__(out_dir=out_dir, model=model, test_loader=test_loader)
         assert inspect.ismethod(model.predict_3D), \
                 "model must have the method `predict_3D`"
+        if pseudo_3D:
+            assert inspect.ismethod(model.predict_3D_pseudo3D_2Dconv), \
+                "model must have the method `predict_3D_pseudo3D_2Dconv`"
+        self.pred_3D_params = pred_3D_params
         self.pseudo_3D = pseudo_3D
-        self.pseudo_3D_params = pseudo_3D_params
         self.bbox_coords = {}
 
     def run_3D_predictions(self, min_size=5000):
@@ -67,6 +70,7 @@ class Stage1Predictor(BasePredictor):
             pred = remove_3D_connected_components(pred, min_size=min_size)
             pred = self.post_process_stage1(pred)
             self.save_pred(pred, act, case)
+            bbox_coord = self.create_bbox_stage1(pred)
             self.bbox_coords[case] = bbox_coord
         self.save_bbox_coords()
 
@@ -81,7 +85,7 @@ class Stage1Predictor(BasePredictor):
         Creates the bounding box from the prediction.
         """
         bbox = get_bbox_from_mask(pred, outside_value=0)
-        expanded_bbox = expand_bbox(pred, bbox_lengths=[None, 256, 256])
+        expanded_bbox = expand_bbox(bbox, bbox_lengths=[None, 256, 256])
         return expanded_bbox
 
     def save_bbox_coords(self):
