@@ -82,3 +82,17 @@ def crop_to_bbox(image, bbox):
     assert len(image.shape) == 3, "only supports 3d images"
     resizer = (slice(bbox[0][0], bbox[0][1]), slice(bbox[1][0], bbox[1][1]), slice(bbox[2][0], bbox[2][1]))
     return image[resizer]
+
+def resize_bbox(bbox, dims_ratio):
+    """
+    Resizes the bbox for each axis specified in `dims_ratio`
+    Args:
+        bbox (list): list of [lower bound, upper bound] sub-lists
+        dims_ratio (list): ratios of raw/resized (same length as bbox)
+            dims_ratio = np.array(raw_x.shape) / np.array(resized_x.shape)
+    """
+    assert len(bbox) == len(dims_ratio), \
+        "The number of lbub sub-lists must be equal to the number of scale factors in dims_ratio."
+    dims_ratio_multiply = np.array(list(zip(dims_ratio, dims_ratio))) # for multiplying to both the lb and ub coords
+    scaled_actual_bbox = (actual_bbox * dims_ratio_multiply).astype(np.int32)
+    return scaled_actual_bbox
