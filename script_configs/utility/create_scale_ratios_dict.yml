@@ -1,0 +1,3 @@
+  in_dir: C:\Users\jchen\kits19\data #/content/kits19/data
+  resized_in_dir: C:\Users\jchen\Desktop\Datasets\kits_reproduced_from_raw
+  scale_json_path: C:\Users\jchen\Desktop\Datasets\kits_reproduced_from_raw\scale_factors.json
