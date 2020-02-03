@@ -22,6 +22,7 @@ def main(config):
     print(f"Seed: {seed}")
     pred = Stage1Predictor(out_dir=config["out_dir"],
                            model=exp.model, test_loader=exp.loaders["test"],
+                           scale_ratios_json_path=config["scale_ratios_json_path"],
                            pred_3D_params=config["predict_3D_params"],
                            pseudo_3D=config.get("pseudo_3D"))
     pred.run_3D_predictions()
