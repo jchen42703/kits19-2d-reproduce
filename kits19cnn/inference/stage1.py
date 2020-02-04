@@ -1,16 +1,14 @@
-from pathlib import Path
-from abc import abstractmethod
 from os.path import join, isdir
 from tqdm import tqdm
+from pathlib import Path
 import os
 import numpy as np
 import inspect
-import nibabel as nib
 import torch
 
 from kits19cnn.inference import remove_3D_connected_components, BasePredictor
 from kits19cnn.io import get_bbox_from_mask, expand_bbox, crop_to_bbox, resize_bbox
-from kits19.utils import load_json, save_json
+from kits19cnn.utils import load_json, save_json
 
 class Stage1Predictor(BasePredictor):
     """
@@ -57,7 +55,13 @@ class Stage1Predictor(BasePredictor):
 
     def run_3D_predictions(self, min_size=5000):
         """
-        Runs predictions on the dataset (specified in test_loader)
+        Runs and saves predictions on the dataset (specified in test_loader),
+        post-processes, creates and save the bounding boxes.
+        Args:
+            min_size (int): The minimum size for a 3D connected components to
+                be considered as part of the ROIs.
+        Returns:
+            None
         """
         cases = self.test_loader.dataset.im_ids
         assert len(cases) == len(self.test_loader)
@@ -74,8 +78,9 @@ class Stage1Predictor(BasePredictor):
             pred = remove_3D_connected_components(pred, min_size=min_size)
             pred = self.post_process_stage1(pred)
             self.save_pred(pred, act, case)
-            bbox_coord = self.create_bbox_stage1(pred, case)
-            self.bbox_coords[case] = bbox_coord
+            case_raw = Path(case).name
+            bbox_coord = self.create_bbox_stage1(pred, case_raw)
+            self.bbox_coords[case_raw] = bbox_coord
         self.save_bbox_coords()
 
     def post_process_stage1(self, pred):
@@ -84,20 +89,31 @@ class Stage1Predictor(BasePredictor):
         """
         return (pred>0)*1
 
-    def create_bbox_stage1(self, pred, case):
+    def create_bbox_stage1(self, pred, case_raw):
         """
-        Creates the bounding box from the prediction.
+        Creates the bounding box from the prediction. Resizes the bbox based
+        on the scale ratio (original / resized) and then expands the spatial
+        dimensions (x & y) of the bbox to 256 x 256.
+        Args:
+            pred (np.ndarray): 3D Array (no channels)
+            case_raw (str): Raw case name
+        Returns:
+            expanded_bbox (list):
+                [[lb_x, ub_x], [lb_y, ub_y], [lb_z, ub_z]]
+                where lb -> lower bound coordinate
+                      ub -> upper bound coordinate
         """
         bbox = get_bbox_from_mask(pred, outside_value=0)
-        resized_bbox = resize_bbox(bbox, self.scale_ratios_dict[case])
-        expanded_bbox = expand_bbox(bbox, bbox_lengths=[None, 256, 256])
+        resized_bbox = resize_bbox(bbox,
+                                   self.scale_ratios_dict[case_raw])
+        expanded_bbox = expand_bbox(resized_bbox,
+                                    bbox_lengths=[None, 256, 256])
         return expanded_bbox
 
     def save_bbox_coords(self):
         """
         Saves the bbox coords dictionary as a .json.
         """
-        import json
         out_path = join(self.out_dir, "bbox_stage1.json")
         save_json(self.bbox_coords, out_path)
         print(f"Saved the bounding box coordinates at {out_path}.")
