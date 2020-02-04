@@ -19,7 +19,7 @@ def main(config):
     exp = TrainSegExperiment2D(config)
     output_key = "logits"
 
-    print(f"Seed: {seed}\nMode: {mode}")
+    print(f"Seed: {seed}")
 
     runner = SupervisedRunner(output_key=output_key)
 

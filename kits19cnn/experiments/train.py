@@ -6,10 +6,12 @@ import catalyst.dl.callbacks as callbacks
 from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader
 import torch
+import json
 
 from torch.nn import BCELoss, BCEWithLogitsLoss, CrossEntropyLoss
-from kits19cnn.loss_functions import DC_and_CE_loss, BCEDiceLoss, \
-                                     SegClfBCEDiceLoss
+from catalyst.utils import get_device, any2device
+from kits19cnn.io import SliceIDSampler
+from kits19cnn.loss_functions import *
 from .utils import get_preprocessing, get_training_augmentation, \
                   get_validation_augmentation, seed_everything
 
@@ -93,9 +95,14 @@ class TrainExperiment(object):
         """
         Creates a list of all paths to case folders for the dataset split
         """
-        search_path = os.path.join(self.config["data_folder"], "*/")
-        case_list = sorted(glob(search_path))
-        case_list = case_list[:210] if len(case_list) >= 210 else case_list
+        with open(self.io_params["classes_per_slice_path"], "r") as fp:
+            pos_slice_dict = json.load(fp)
+
+        sampler = SliceIDSampler(pos_slice_dict,
+                                 classes_ratio=self.io_params["sampling_distribution"],
+                                 shuffle=True,
+                                 random_state=self.io_params["split_seed"])
+        case_list = sampler.sample_slices_names()
         return case_list
 
     def get_split(self):
@@ -154,10 +161,14 @@ class TrainExperiment(object):
             "`optimizer` must be an instance of torch.optim.Optimizer"
         sched_params = self.opt_params["scheduler_params"]
         scheduler_name = sched_params["scheduler"]
-        scheduler_args = sched_params[scheduler_name]
-        scheduler_cls = torch.optim.lr_scheduler.__dict__[scheduler_name]
-        scheduler = scheduler_cls(optimizer=self.opt, **scheduler_args)
-        print(f"LR Scheduler: {scheduler.__class__.__name__}")
+        if scheduler_name is not None:
+            scheduler_args = sched_params[scheduler_name]
+            scheduler_cls = torch.optim.lr_scheduler.__dict__[scheduler_name]
+            scheduler = scheduler_cls(optimizer=self.opt, **scheduler_args)
+            print(f"LR Scheduler: {scheduler.__class__.__name__}")
+        else:
+            scheduler = None
+            print("No LR Scheduler")
         return scheduler
 
     def get_criterion(self):
@@ -168,9 +179,11 @@ class TrainExperiment(object):
         loss_kwargs = self.criterion_params[loss_name]
         if "weight" in list(loss_kwargs.keys()):
             if isinstance(loss_kwargs["weight"], list):
+                weight_tensor = torch.tensor(loss_kwargs["weight"])
+                weight_tensor = any2device(weight_tensor, get_device())
                 print(f"Converted the `weight` argument in {loss_name}",
-                      " to a torch.Tensor...")
-                loss_kwargs["weight"] = torch.tensor(loss_kwargs["weight"])
+                      f" to a {weight_tensor.type()}...")
+                loss_kwargs["weight"] = weight_tensor
         loss_cls = globals()[loss_name]
         loss = loss_cls(**loss_kwargs)
         print(f"Criterion: {loss}")

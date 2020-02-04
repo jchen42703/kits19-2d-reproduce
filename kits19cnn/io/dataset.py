@@ -41,9 +41,7 @@ class SliceDataset(Dataset):
         # conversion to tensor if needed
         x = torch.from_numpy(x) if isinstance(x, np.ndarray) else x
         y = torch.from_numpy(y) if isinstance(y, np.ndarray) else y
-        # changing to channels first
-        x, y = x.permute(2, 0, 1), y.permute(2, 0, 1)
-        return (x, y)
+        return (x.float(), y.long())
 
     def __len__(self):
         return len(self.im_ids)
@@ -143,6 +141,4 @@ class PseudoSliceDataset(SliceDataset):
                 # loading slices if they exist
                 if os.path.isfile(x_path):
                     x_arr[:, :, idx] = np.load(x_path)
-                else:
-                    raise OSError(f"{x_path} not found.")
             return (x_arr, center_y)

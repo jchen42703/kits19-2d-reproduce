@@ -4,6 +4,7 @@ import json
 import numpy as np
 import torch
 import albumentations as albu
+from albumentations.pytorch import ToTensorV2
 from copy import deepcopy
 
 from kits19cnn.io import CenterCrop
@@ -37,24 +38,25 @@ def get_validation_augmentation(augmentation_key):
     Validation data augmentations. Usually, just cropping.
     """
     transform_dict = {
-                        "default": [],
-                     }
+        "resunet1": [],
+        "resunet2": [],
+        "resnet": [],
+    }
     test_transform = transform_dict[augmentation_key]
     print(f"\nTest/Validation Transforms: {test_transform}")
     return albu.Compose(test_transform)
 
-def get_preprocessing(rgb: bool = False):
+def get_preprocessing():
     """
     Construct preprocessing transform
 
     Args:
-        rgb (bool): Whether or not to return the input with three channels
-            or just single (grayscale)
+        None
     Return:
         transform: albumentations.Compose
     """
     _transform = [
-        albu.pytorch.ToTensorToTensorV2(),
+        ToTensorV2(),
     ]
 
     print(f"\nPreprocessing Transforms: {_transform}")
