@@ -94,5 +94,5 @@ def resize_bbox(bbox, dims_ratio):
     assert len(bbox) == len(dims_ratio), \
         "The number of lbub sub-lists must be equal to the number of scale factors in dims_ratio."
     dims_ratio_multiply = np.array(list(zip(dims_ratio, dims_ratio))) # for multiplying to both the lb and ub coords
-    scaled_actual_bbox = (actual_bbox * dims_ratio_multiply).astype(np.int32)
+    scaled_actual_bbox = (bbox * dims_ratio_multiply).astype(np.int32).tolist()
     return scaled_actual_bbox
