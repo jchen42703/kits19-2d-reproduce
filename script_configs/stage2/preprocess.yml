@@ -1,8 +1,9 @@
     preprocessor_params:
       in_dir: /content/kits19/data
-      out_dir: /content/kits_preprocessed
+      out_dir: /content/kits_preprocessed_cropped
       cases: ~
-      kits_json_path: /content/kits19/data/kits.json
+      kits_json_path: ~
+      bbox_json_path: /content/kits19_predictions/bbox_stage1.json
       clip_values:
           - -30
           - 300
