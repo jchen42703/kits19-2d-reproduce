@@ -1,0 +1,32 @@
+  in_dir: C:\\Users\\jchen\\Desktop\\Datasets\\kits_reproduced_from_raw_cropped #C:\\Users\\Joseph\\Desktop\\kits19_preprocessed\\data
+  out_dir: C:\\Users\\jchen\\Desktop\\Datasets\\kits19_predictions_cropped #C:\\Users\\Joseph\\Desktop\\kits19_predictions
+  with_masks: True
+  stage: 2
+  checkpoint_path: C:\\Users\\jchen\\Desktop\\stage1resunet_23epochs_last_full.pth
+  pseudo_3D: True
+
+  io_params:
+    test_size: 0.2
+    split_seed: 42
+    batch_size: 1
+    num_workers: 2
+    file_ending: .npy # nii.gz
+
+  model_params:
+    model_name: ResNetSeg
+    ResNetSeg:
+      input_channels: 5
+
+  predict_3D_params:
+    do_mirroring: True
+    num_repeats: 1
+    min_size:
+      - 256
+      - 256
+    batch_size: 1
+    mirror_axes:
+      - 0
+      - 1
+    regions_class_order: ~ # this is argmax
+    pseudo3D_slices: 5
+    all_in_gpu: False
