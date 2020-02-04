@@ -1,6 +1,4 @@
-from catalyst.dl.runner import SupervisedRunner
-
-from kits19cnn.inference import Stage1Predictor
+from kits19cnn.inference import Stage1Predictor, General3DPredictor
 from kits19cnn.experiments import SegmentationInferenceExperiment2D, \
                                   seed_everything
 
@@ -20,11 +18,17 @@ def main(config):
     exp = SegmentationInferenceExperiment2D(config)
 
     print(f"Seed: {seed}")
-    pred = Stage1Predictor(out_dir=config["out_dir"],
-                           model=exp.model, test_loader=exp.loaders["test"],
-                           scale_ratios_json_path=config["scale_ratios_json_path"],
-                           pred_3D_params=config["predict_3D_params"],
-                           pseudo_3D=config.get("pseudo_3D"))
+    if config["stage"] == 1:
+        pred = Stage1Predictor(out_dir=config["out_dir"],
+                               model=exp.model, test_loader=exp.loaders["test"],
+                               scale_ratios_json_path=config["scale_ratios_json_path"],
+                               pred_3D_params=config["predict_3D_params"],
+                               pseudo_3D=config.get("pseudo_3D"))
+    elif config["stage"] == 2:
+        pred = General3DPredictor(out_dir=config["out_dir"],
+                                  model=exp.model, test_loader=exp.loaders["test"],
+                                  pred_3D_params=config["predict_3D_params"],
+                                  pseudo_3D=config.get("pseudo_3D"))
     pred.run_3D_predictions()
 
 if __name__ == "__main__":
