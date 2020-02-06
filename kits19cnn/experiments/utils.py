@@ -55,7 +55,7 @@ def get_preprocessing():
         transform: albumentations.Compose
     """
     _transform = [
-        ToTensorv2(),
+        ToTensorV2(),
     ]
 
     print(f"\nPreprocessing Transforms: {_transform}")
