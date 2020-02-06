@@ -6,7 +6,7 @@ import torch
 import albumentations as albu
 from copy import deepcopy
 
-from kits19cnn.io import CenterCrop
+from kits19cnn.io import CenterCrop, ToTensorV2
 
 def get_training_augmentation(augmentation_key="aug1"):
     transform_dict = {
@@ -54,7 +54,9 @@ def get_preprocessing():
     Return:
         transform: albumentations.Compose
     """
-    _transform = []
+    _transform = [
+        ToTensorv2(),
+    ]
 
     print(f"\nPreprocessing Transforms: {_transform}")
     return albu.Compose(_transform)
