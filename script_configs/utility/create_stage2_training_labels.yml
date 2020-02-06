@@ -1,0 +1,6 @@
+  cases_raw: ~
+  in_dir: C:\Users\jchen\kits19\data  #/content/kits19/data
+  save_path: C:\Users\jchen\Active Github Repositories\kits19-2d-reproduce\example_generated_files\stage2_actual_bbox.json #/content/kits19_preprocessed/stage2_actual_bbox.json
+  # in_dir: C:\Users\jchen\Desktop\Datasets\kits19_interpolated\data  #/content/kits19/data
+  # save_path: C:\Users\jchen\Active Github Repositories\kits19-2d-reproduce\example_generated_files\stage2_actual_bbox_interpolated.json #/content/kits19_preprocessed/stage2_actual_bbox.json
+# python "C:\Users\jchen\Active Github Repositories\kits19-2d-reproduce\scripts\utility\create_stage2_training_labels.py" --yml_path="C:\Users\jchen\Active Github Repositories\kits19-2d-reproduce\script_configs\utility\create_stage2_training_labels.yml"
