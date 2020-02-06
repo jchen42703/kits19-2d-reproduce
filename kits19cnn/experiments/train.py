@@ -69,6 +69,7 @@ class TrainExperiment(object):
         self.cb_params = config["callback_params"]
         self.criterion_params = config["criterion_params"]
         # initializing the experiment components
+        self._pos_slice_dict = load_json(self.io_params["classes_per_slice_path"])
         self.case_list = self.setup_im_ids()
         train_ids, val_ids, _ = self.get_split()
         self.train_dset, self.val_dset = self.get_datasets(train_ids, val_ids)
@@ -78,8 +79,6 @@ class TrainExperiment(object):
         self.lr_scheduler = self.get_lr_scheduler()
         self.criterion = self.get_criterion()
         self.cb_list = self.get_callbacks()
-
-        self._pos_slice_dict = load_json(self.io_params["classes_per_slice_path"])
 
     @abstractmethod
     def get_datasets(self, train_ids, valid_ids):
@@ -119,7 +118,7 @@ class TrainExperiment(object):
         """
         split_pos_slice_dict = {case_slice_idx_str: classes
                                 for case_slice_idx_str, classes
-                                in self.pos_slice_dict.items()
+                                in self._pos_slice_dict.items()
                                 if case_slice_idx_str[:-4] in case_list}
 
         sampler = SliceIDSampler(split_pos_slice_dict,
