@@ -4,7 +4,6 @@ import json
 import numpy as np
 import torch
 import albumentations as albu
-from albumentations.pytorch import ToTensorV2
 from copy import deepcopy
 
 from kits19cnn.io import CenterCrop
@@ -55,9 +54,7 @@ def get_preprocessing():
     Return:
         transform: albumentations.Compose
     """
-    _transform = [
-        ToTensorV2(),
-    ]
+    _transform = []
 
     print(f"\nPreprocessing Transforms: {_transform}")
     return albu.Compose(_transform)
