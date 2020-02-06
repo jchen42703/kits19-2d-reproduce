@@ -98,10 +98,11 @@ class TrainExperiment(object):
 
     def setup_im_ids(self):
         """
-        Creates a list of all paths to case folders for the dataset split
+        Creates a list of all case folders for the dataset split
         """
-        search_path = os.path.join(self.config["data_folder"], "*/")
-        case_list = sorted(glob(search_path))
+        case_list = sorted([case for case in
+                            os.listdir(self.config["data_folder"])
+                            if case.startswith("case")])
         case_list = case_list[:210] if len(case_list) >= 210 else case_list
         return case_list
 
@@ -109,10 +110,12 @@ class TrainExperiment(object):
         """
         Samples a list of slices for the dataset split ids
         Args:
-            case_list (List[str]): List of paths to case folders
+            case_list (List[str]): List of case folders
         Returns:
-            case_slice_idx_str_list: The new sampled list with paths to each
-                slice instead of case folders
+            case_slice_idx_str_list: The new sampled list with each
+                case_slice_idx_str instead of case folders
+                Note: case_slice_idx_str_list is just {raw_case}_{slice_idx}
+                    slice_idx is capped at 3 digits
         """
         split_pos_slice_dict = {case_slice_idx_str: classes
                                 for case_slice_idx_str, classes
@@ -124,6 +127,7 @@ class TrainExperiment(object):
                                  shuffle=True,
                                  random_state=self.io_params["split_seed"])
         case_slice_idx_str_list = sampler.sample_slices_names()
+
         return case_slice_idx_str_list
 
     def get_split(self):
