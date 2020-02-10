@@ -1,8 +1,7 @@
-  in_dir: C:\\Users\\jchen\\Desktop\\Datasets\\kits_reproduced_from_raw #C:\\Users\\Joseph\\Desktop\\kits19_preprocessed\\data
-  out_dir: C:\\Users\\jchen\\Desktop\\Datasets\\kits19_predictions_empty #C:\\Users\\Joseph\\Desktop\\kits19_predictions
-  scale_ratios_json_path: C:\Users\jchen\Active Github Repositories\kits19-2d-reproduce\scale_factors.json
+  in_dir: C:\\Users\\jchen\\Desktop\\Datasets\\kits_reproduced_from_raw_cropped #C:\\Users\\Joseph\\Desktop\\kits19_preprocessed\\data
+  out_dir: C:\\Users\\jchen\\Desktop\\Datasets\\kits19_predictions_cropped #C:\\Users\\Joseph\\Desktop\\kits19_predictions
   with_masks: True
-  stage: 1
+  stage: 2
   checkpoint_path: C:\\Users\\jchen\\Desktop\\stage1resunet_23epochs_last_full.pth
   pseudo_3D: True
 
@@ -14,13 +13,9 @@
     file_ending: .npy # nii.gz
 
   model_params:
-    model_name: ResUNet
-    ResUNet:
+    model_name: ResNetSeg
+    ResNetSeg:
       input_channels: 5
-      base_num_features: 16
-      num_classes: 3
-      num_pool: 4
-      max_num_features: 256
 
   predict_3D_params:
     do_mirroring: True

@@ -6,7 +6,8 @@ import numpy as np
 import inspect
 import torch
 
-from kits19cnn.inference import remove_3D_connected_components, BasePredictor
+from kits19cnn.inference.utils import remove_3D_connected_components
+from kits19cnn.inference.predictors import BasePredictor
 from kits19cnn.io import get_bbox_from_mask, expand_bbox, crop_to_bbox, resize_bbox
 from kits19cnn.utils import load_json, save_json
 

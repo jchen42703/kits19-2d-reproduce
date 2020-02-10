@@ -2,7 +2,8 @@ from tqdm import tqdm
 import inspect
 import torch
 
-from kits19cnn.inference import remove_3D_connected_components, BasePredictor
+from kits19cnn.inference.utils import remove_3D_connected_components
+from kits19cnn.inference.predictors import BasePredictor
 
 class General3DPredictor(BasePredictor):
     """

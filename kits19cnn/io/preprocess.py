@@ -71,7 +71,9 @@ class Preprocessor(object):
         if not isdir(out_dir):
             os.mkdir(out_dir)
             print("Created directory: {0}".format(out_dir))
-        self.resize_xy_shape = tuple(resize_xy_shape)
+        self.resize_xy_shape = tuple(resize_xy_shape) \
+                               if isinstance(resize_xy_shape, list) \
+                               else None
 
     def gen_data(self, save_fnames=["imaging", "segmentation"]):
         """
@@ -324,9 +326,17 @@ class Preprocessor(object):
     def crop_case_to_bbox(self, image, label, case):
         """
         Crops a 3D image and 3D label to the corresponding bounding box.
+        Args:
+            image (np.ndarray): 3D array (no channels)
+            label (np.ndarray): Same shape as image
+            case (str): Path to the case (will be processed to the raw case)
         """
-        bbox_coord = self.bbox_dict[case]
-        return (crop_to_bbox(image, bbox), crop_to_bbox(label, case))
+        bbox_coord = self.bbox_dict[Path(case).name]
+        if label is not None:
+            return (crop_to_bbox(image, bbox_coord),
+                    crop_to_bbox(label, bbox_coord))
+        elif label is None:
+            return (crop_to_bbox(image, bbox_coord), None)
 
 def standardize_per_image(image):
     """

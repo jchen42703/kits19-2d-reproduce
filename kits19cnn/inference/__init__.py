@@ -1,7 +1,5 @@
-from .evaluate import Evaluator
 from .utils import create_submission, load_weights_infer, \
                    remove_3D_connected_components
+from .predictors import BasePredictor, General3DPredictor, Stage1Predictor
 from .ensemble import Ensembler
-from .base_predictor import BasePredictor
-from .stage1 import Stage1Predictor
-from .general_predictors import General3DPredictor
+from .evaluate import Evaluator
