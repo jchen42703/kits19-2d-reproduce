@@ -23,7 +23,8 @@ class SegmentationInferenceExperiment2D(BaseInferenceExperiment):
         """
         # creating the datasets
         test_dataset = TestVoxelDataset(im_ids=test_ids,
-                                        file_ending=self.io_params["file_ending"])
+                                        file_ending=self.io_params["file_ending"],
+                                        load_labels=self.io_params["load_labels"])
         return test_dataset
 
     def get_model(self):
