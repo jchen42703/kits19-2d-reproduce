@@ -53,13 +53,15 @@ class TestVoxelDataset(VoxelDataset):
     Make sure to specify the correct input directory in the `im_ids` for the
     volumes to load correctly.
     """
-    def __init__(self, im_ids: np.array, file_ending: str = ".npy"):
+    def __init__(self, im_ids: np.array, file_ending: str = ".npy",
+                 load_labels: bool = False):
         """
         Attributes
             im_ids (np.ndarray): of image names.
             file_ending (str): one of ['.npy', '.nii', '.nii.gz']
         """
         super().__init__(im_ids=im_ids, file_ending=file_ending)
+        self.load_labels = load_labels
 
     def load_volume(self, case_id):
         """
@@ -77,8 +79,9 @@ class TestVoxelDataset(VoxelDataset):
         y_path = join(case_id, f"segmentation{self.file_ending}")
         if self.file_ending == ".npy":
             x = np.load(x_path)
-            y = np.load(y_path) if isfile(y_path) else np.zeros(x.shape)
+            y = np.load(y_path) if self.load_labels else np.zeros(x.shape)
         elif self.file_ending == ".nii.gz" or self.file_ending == ".nii":
             x = nib.load(x_path).get_fdata()
-            y = nib.load(y_path).get_fdata() if isfile(y_path) else np.zeros(x.shape)
+            y = nib.load(y_path).get_fdata() if self.load_labels \
+                else np.zeros(x.shape)
         return (x[None], y[None])
