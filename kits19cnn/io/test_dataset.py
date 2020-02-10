@@ -1,4 +1,5 @@
 from os.path import isfile, join
+from glob import glob
 import numpy as np
 
 import torch
@@ -78,10 +79,36 @@ class TestVoxelDataset(VoxelDataset):
         x_path = join(case_id, f"imaging{self.file_ending}")
         y_path = join(case_id, f"segmentation{self.file_ending}")
         if self.file_ending == ".npy":
-            x = np.load(x_path)
-            y = np.load(y_path) if self.load_labels else np.zeros(x.shape)
+            try:
+                x = np.load(x_path)
+                y = np.load(y_path) if self.load_labels else np.zeros(x.shape)
+            except FileNotFoundError:
+                x, y = self.load_all_slices_as_3d(case_id)
         elif self.file_ending == ".nii.gz" or self.file_ending == ".nii":
             x = nib.load(x_path).get_fdata()
             y = nib.load(y_path).get_fdata() if self.load_labels \
                 else np.zeros(x.shape)
         return (x[None], y[None])
+
+    def load_all_slices_as_3d(self, case_id):
+        """
+        Loads saved 2D numpy arrays (slices) into a single 3D volume. This
+        will only work if self.file_ending is '.npy' and will work for both
+        images and labels.
+
+        Args:
+            case_id (str): Path to the case folder.
+        """
+        x_slices = sorted(glob(join(case_id, "imaging_*.npy")))
+        y_slices = sorted(glob(join(case_id, "segmentation_*.npy")))
+
+        # BIG ASSUMPTION HERE VV (that both x and y have the same shape)
+        slice_shape = np.load(x_slices[0]).shape # (256, 256) for stage1
+        volume_shape = (len(x_slices),) + slice_shape
+        x, y = np.zeros(volume_shape), np.zeros(volume_shape)
+        for i, (x_path, y_path) in enumerate(zip(x_slices, y_slices)):
+            x[i] = np.load(x_path)
+            if self.load_labels:
+                y[i] = np.load(y_path)
+
+        return (x, y)
