@@ -44,17 +44,17 @@ class Evaluator(object):
             "label_file_ending must be one of ['.npy', '.nii', '.nii.gz']"
         # converting cases from filepaths to raw folder names
         if cases is None:
-            self.cases_raw = [case \
-                              for case in os.listdir(self.pred_dir) \
-                              if case.startswith("case")]
+            self.cases_raw = sorted([case \
+                                     for case in os.listdir(self.pred_dir) \
+                                     if case.startswith("case")])
             assert len(self.cases_raw) > 0, \
                 "Please make sure that pred_dir has the case folders"
         elif cases is not None:
             # extracting raw cases from filepath cases
             cases_raw = [Path(case).name for case in cases]
             # filtering them down to only cases in pred_dir
-            self.cases_raw = [case for case in cases_raw \
-                              if isdir(join(self.pred_dir, case))]
+            self.cases_raw = sorted([case for case in cases_raw \
+                                     if isdir(join(self.pred_dir, case))])
 
         self.dset = PredictionDataset(in_dir=orig_img_dir, pred_dir=pred_dir,
                                       im_ids=self.cases_raw,
@@ -81,7 +81,7 @@ class Evaluator(object):
 
         for case, batch in tqdm(zip(self.cases_raw, self.dset),
                                 total=len(self.cases_raw)):
-            pred, label = self.post_process(**batch)
+            pred, label = self.post_process(*batch)
 
             metrics_dict = self.eval_all_metrics_per_case(metrics_dict, label,
                                                           pred, case,
@@ -103,6 +103,9 @@ class Evaluator(object):
             pred (np.ndarray): shape (x, y, z)
             label (np.ndarray): shape (x, y, z)
         """
+        pred = pred.detach().cpu().numpy()
+        label = label.detach().cpu().numpy()
+
         if self.binary_tumor:
             pred[pred == 1] = 2
         return (pred.squeeze(), label.squeeze())
