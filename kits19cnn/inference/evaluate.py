@@ -248,5 +248,10 @@ class GlobalMetricsEvaluator(Evaluator):
                                                 decimals=3))
         metrics_dict["tu_dice"].append(np.round(self.meter.value()[2],
                                                 decimals=3))
+        for key in list(metrics_dict.keys()):
+            if key in ["cases", "tk_dice", "tu_dice"]:
+                continue
+            else:
+                metrics_dict[key].append(None)
 
         return metrics_dict
