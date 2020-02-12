@@ -13,9 +13,10 @@ class MultiClassDiceMeter(meter.Meter):
     for each epoch and calculates multi-class F1-score based on
     those metrics.
     """
-    def __init__(self, num_classes=3):
+    def __init__(self, num_classes=3, argmax=False):
         super(MultiClassDiceMeter, self).__init__()
         self.num_classes = num_classes
+        self.argmax = argmax
         self.reset()
 
     def reset(self):
@@ -41,7 +42,8 @@ class MultiClassDiceMeter(meter.Meter):
         Returns:
             None
         """
-        output = output.argmax(1)
+        if self.argmax:
+            output = output.argmax(1)
 
         confusion_matrix = calculate_confusion_matrix_from_arrays(
             target, output, self.num_classes
