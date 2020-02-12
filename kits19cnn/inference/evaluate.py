@@ -7,6 +7,7 @@ from os.path import isdir, join
 from pathlib import Path
 
 from kits19cnn.metrics import evaluate_official
+from kits19cnn.io import PredictionDataset
 from sklearn.metrics import precision_recall_fscore_support
 
 class Evaluator(object):
@@ -17,7 +18,7 @@ class Evaluator(object):
     def __init__(self, orig_img_dir, pred_dir, cases=None,
                  label_file_ending=".npy", binary_tumor=False):
         """
-        Attributes:
+        Args:
             orig_img_dir: path to the directory containing the
                 labels to evaluate with
                 i.e. original kits19/data directory or the preprocessed imgs
@@ -38,11 +39,9 @@ class Evaluator(object):
             label_file_ending (str): one of ['.npy', '.nii', '.nii.gz']
             binary_tumor (bool): whether or not to treat predicted 1s as tumor
         """
-        self.orig_img_dir = orig_img_dir
         self.pred_dir = pred_dir
-        self.file_ending = label_file_ending
-        assert self.file_ending in [".npy", ".nii", ".nii.gz"], \
-            "label_file_ending must be one of [''.npy', '.nii', '.nii.gz']"
+        assert label_file_ending in [".npy", ".nii", ".nii.gz"], \
+            "label_file_ending must be one of ['.npy', '.nii', '.nii.gz']"
         # converting cases from filepaths to raw folder names
         if cases is None:
             self.cases_raw = [case \
@@ -56,6 +55,12 @@ class Evaluator(object):
             # filtering them down to only cases in pred_dir
             self.cases_raw = [case for case in cases_raw \
                               if isdir(join(self.pred_dir, case))]
+
+        self.dset = PredictionDataset(in_dir=orig_img_dir, pred_dir=pred_dir,
+                                      im_ids=self.cases_raw,
+                                      file_ending=label_file_ending,
+                                      pred_prefix="pred", load_labels=True)
+
         self.binary_tumor = binary_tumor
         if self.binary_tumor:
             print("Evaluating predicted 1s as tumor (changed to 2).")
@@ -74,9 +79,10 @@ class Evaluator(object):
                         "fpr": [], "orig_shape": [],
                         "support": [], "pred_support": []}
 
-        for case in tqdm(self.cases_raw):
-            # loading the necessary arrays
-            label, pred = self.load_masks_and_pred(case)
+        for case, batch in tqdm(zip(self.cases_raw, self.dset),
+                                total=len(self.cases_raw)):
+            pred, label = self.post_process(**batch)
+
             metrics_dict = self.eval_all_metrics_per_case(metrics_dict, label,
                                                           pred, case,
                                                           print_metrics)
@@ -87,25 +93,19 @@ class Evaluator(object):
         print(f"Saving {metrics_path}...")
         df.to_csv(metrics_path)
 
-    def load_masks_and_pred(self, case):
+    def post_process(self, pred, label):
         """
-        Loads mask and prediction from `case`
+        Processes mask and prediction from `case`. Runs the check for
+        `binary_tumor` and squeezes out the extra channel dimensions.
         Args:
             case (str): case folder names to use
         Returns:
-            label (np.ndarray): shape (x, y, z)
             pred (np.ndarray): shape (x, y, z)
+            label (np.ndarray): shape (x, y, z)
         """
-        y_path = join(self.orig_img_dir, case, f"segmentation{self.file_ending}")
-        if self.file_ending == ".npy":
-            label = np.load(y_path)
-        elif self.file_ending == ".nii.gz" or self.file_ending == ".nii":
-            label = nib.load(y_path).get_fdata()
-        pred = np.load(join(self.pred_dir, case, "pred.npy")).squeeze()
         if self.binary_tumor:
-            # treating prediced 1s as tumor (2)
             pred[pred == 1] = 2
-        return (label, pred)
+        return (pred.squeeze(), label.squeeze())
 
     def eval_all_metrics_per_case(self, metrics_dict, y_true, y_pred,
                                   case, print_metrics=False):
