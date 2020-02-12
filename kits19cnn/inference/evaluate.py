@@ -10,6 +10,8 @@ from kits19cnn.metrics import evaluate_official
 from kits19cnn.io import PredictionDataset
 from sklearn.metrics import precision_recall_fscore_support
 
+from .multiclass_dice_meter import MultiClassDiceMeter
+
 class Evaluator(object):
     """
     Evaluates all of the predictions in a user-specified directory and logs them in a csv. Assumes that
@@ -169,4 +171,82 @@ class Evaluator(object):
             else:
                 metrics_dict[key] = np.round(metrics_dict[key],
                                              decimals=3).tolist()
+        return metrics_dict
+
+class GlobalMetricsEvaluator(Evaluator):
+    """
+    Evaluates all of the predictions in a user-specified directory and logs
+    them in a csv. Assumes that the output is in the KiTS19 file structure.
+    This does the job of Evaluator and also tracks global metrics.
+    """
+    def __init__(self, orig_img_dir, pred_dir, cases=None,
+                 label_file_ending=".npy", binary_tumor=False,
+                 num_classes=3):
+        """
+        Args:
+            orig_img_dir: path to the directory containing the
+                labels to evaluate with
+                i.e. original kits19/data directory or the preprocessed imgs
+                directory
+                assumes structure:
+                orig_img_dir
+                    case_xxxxx
+                        imaging{file_ending}
+                        segmentation{file_ending}
+            pred_dir: path to the predictions directory, created by Predictor
+                assumes structure:
+                pred_dir
+                    case_xxxxx
+                        pred.npy
+                        act.npy
+            cases: list of filepaths to case folders or just case folder names.
+                Defaults to None.
+            label_file_ending (str): one of ['.npy', '.nii', '.nii.gz']
+            binary_tumor (bool): whether or not to treat predicted 1s as tumor
+        """
+        super().__init__(orig_img_dir=orig_img_dir, pred_dir=pred_dir,
+                         cases=cases, label_file_ending=label_file_ending,
+                         binary_tumor=binary_tumor)
+
+        self.meter = MultiClassDiceMeter(num_classes=num_classes)
+
+    def evaluate_all(self, print_metrics=False):
+        """
+        Evaluates all cases and creates the results.csv, which stores all of
+        the metrics and the averages.
+        Args:
+            print_metrics (bool): whether or not to print metrics.
+                Defaults to False to be cleaner with tqdm.
+        """
+        metrics_dict = {"cases": [],
+                        "tk_dice": [], "tu_dice": [],
+                        "precision": [], "recall": [],
+                        "fpr": [], "orig_shape": [],
+                        "support": [], "pred_support": []}
+
+        for case, batch in tqdm(zip(self.cases_raw, self.dset),
+                                total=len(self.cases_raw)):
+            pred, label = self.post_process(*batch)
+            self.meter.add(pred, label)
+            metrics_dict = self.eval_all_metrics_per_case(metrics_dict, label,
+                                                          pred, case,
+                                                          print_metrics)
+        metrics_dict = self.round_all(self.average_all_cases_per_metric(metrics_dict))
+        metrics_dict = self.add_global_metrics(metrics_dict)
+
+        df = pd.DataFrame(metrics_dict)
+        metrics_path = join(self.pred_dir, "results.csv")
+        print(f"Saving {metrics_path}...")
+        df.to_csv(metrics_path)
+
+    def add_global_metrics(self, metrics_dict):
+        """
+        Adding the global metrics to metrics dict.
+        """
+        metrics_dict["cases"].append("global")
+        metrics_dict["tk_dice"].append(np.round(self.meter.value()[1],
+                                                decimals=3))
+        metrics_dict["tu_dice"].append(np.round(self.meter.value()[2],
+                                                decimals=3))
+
         return metrics_dict
