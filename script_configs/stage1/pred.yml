@@ -5,6 +5,7 @@
   mode: segmentation
   checkpoint_path: C:\\Users\\jchen\\Desktop\\stage1resunet_23epochs_last_full.pth
   pseudo_3D: True
+  min_size: 5000
 
   io_params:
     test_size: 0.2

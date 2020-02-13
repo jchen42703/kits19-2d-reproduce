@@ -25,7 +25,7 @@ def main(config):
                            scale_ratios_json_path=config["scale_ratios_json_path"],
                            pred_3D_params=config["predict_3D_params"],
                            pseudo_3D=config.get("pseudo_3D"))
-    pred.run_3D_predictions()
+    pred.run_3D_predictions(min_size=config["min_size"])
 
 if __name__ == "__main__":
     import yaml
