@@ -5,7 +5,9 @@ import torch
 
 class ToTensorV2(BasicTransform):
     """
-    Convert image and mask to `torch.Tensor`.
+    Convert image and mask to `torch.Tensor`. This is different from the
+    albumentations version in that it also transposes the mask instead of
+    just the image.
     """
 
     def __init__(self, always_apply=True, p=1.0):
