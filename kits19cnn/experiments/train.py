@@ -72,7 +72,8 @@ class TrainExperiment(object):
         self._pos_slice_dict = load_json(self.io_params["classes_per_slice_path"])
         self.case_list = self.setup_im_ids()
         train_ids, val_ids, _ = self.get_split()
-        self.train_dset, self.val_dset = self.get_datasets(train_ids, val_ids)
+        self.train_dset, self.val_dset = self.get_datasets(sorted(train_ids),
+                                                           sorted(val_ids))
         self.loaders = self.get_loaders()
         self.model = self.get_model()
         self.opt = self.get_opt()
