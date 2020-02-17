@@ -21,8 +21,8 @@
     num_pseudo_slices: 5
 
   criterion_params:
-    loss: CrossEntropyLoss
-    CrossEntropyLoss:
+    loss: CrossentropyND
+    CrossentropyND:
       weight:
         - 0.3
         - 1.0
