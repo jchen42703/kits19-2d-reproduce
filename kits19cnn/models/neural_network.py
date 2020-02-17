@@ -154,6 +154,19 @@ class SegmentationNetwork(NeuralNetwork):
                                     regions_class_order=None,
                                     pad_border_mode="edge",
                                     pad_kwargs=None):
+        """
+        Args:
+            x (np.ndarray): shape (c, h, w)
+            do_mirroring (bool): whether or not to mirror for TTA
+            num_repeats (int): number of times to run the prediction
+            min_size: The minimum size the image should be.
+                i.e. This should be [256, 256] for stage 1
+            BATCH_SIZE (int):
+                This is used for `data = np.vstack([data] * BATCH_SIZE)`
+            mirror_axes (List[int]/ Tuple[int]): list of axes to mirror for TTA
+            regions_class_order (None): Keep this to None if you're doing
+                multi-class, which this challenge is for.
+        """
         with torch.no_grad():
             _ = None
             # x, old_shape = pad_patient_2D_incl_c(x, self.input_shape_must_be_divisible_by, min_size)
@@ -196,13 +209,26 @@ class SegmentationNetwork(NeuralNetwork):
 
     def _internal_maybe_mirror_and_pred_2D(self, x, num_repeats, mirror_axes,
                                            do_mirroring=True, mult=None):
-        # everything in here takes place on the GPU. If x and mult are not yet on GPU this will be taken care of here
-        # we now return a cuda tensor! Not numpy array!
+        """
+        Args:
+            x (np.ndarray): shape (1, c, h, w) to be fed into the model.
+                This will be converted to a torch.Tensor within this method.
+            num_repeats (np.ndarray): number of times to repeat this operation
+            mirror_axes (List[int]/ Tuple[int]): list of axes to mirror for TTA
+            do_mirroring (bool): whether or not to even mirror
+            mult:
+        Returns:
+            result_torch (torch.Tensor): shape (1, self.num_classes, h, w)
+        """
+        # everything in here takes place on the GPU. If x and mult are not yet
+        # on GPU this will be taken care of here we now return a cuda tensor!
+        # Not numpy array!
         with torch.no_grad():
             x = to_cuda(maybe_to_torch(x), gpu_id=self.get_device())
             mult = to_cuda(maybe_to_torch(mult), gpu_id=self.get_device())
             result_torch = torch.zeros([1, self.num_classes] + list(x.shape[2:]),
-                                       dtype=torch.float).cuda(self.get_device(), non_blocking=True)
+                                       dtype=torch.float).cuda(self.get_device(),
+                                       non_blocking=True)
 
             num_results = num_repeats
             if do_mirroring:
