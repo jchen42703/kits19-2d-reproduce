@@ -12,16 +12,15 @@ class SliceDataset(Dataset):
     directory contains 2D slices processed by
     `io.Preprocessor.save_dir_as_2d()`.
 
-    B (background), K (kidney), KT (kidney + tumor)
-    Stage 1: Sampled each class with p=0.33
-    Stage 2: Samples only K and KT (p=0.5)
+    Loads slices while assuming that sampling occurs prior to data loading.
     """
     def __init__(self, im_ids: np.array, in_dir: str, transforms=None,
                  preprocessing=None):
         """
         Attributes
             im_ids (np.ndarray): of case_slice_idx_str.
-            in_dir (str): path to where all of the cases and slices are located
+            in_dir (str): path to where all of the case folders and slices
+                are located
             transforms (albumentations.augmentation): transforms to apply
                 before preprocessing. Defaults to HFlip and ToTensor
             preprocessing: ops to perform after transforms, such as
@@ -75,6 +74,8 @@ class SliceDataset(Dataset):
     def split_case_slice_idx_str(self, case_slice_idx_str):
         """
         Processes the case_slice_idx_str (each element of self.im_ids)
+        Args:
+            case_slice_idx_str (str): looks like f'{case_raw}_{slice_idx_str}'
         Returns:
             (full case path, parsed slice index in string form)
             Note: the parsed slice index is just the raw integer slice index
@@ -118,8 +119,8 @@ class PseudoSliceDataset(SliceDataset):
         """
         Gets the slice idx using self.get_slice_idx_str() and actually loads
         the appropriate slice array. Returned arrays have shape:
-            (batch_size, n_channels, h, w)
-        for batchgenerators transforms.
+            (h, w, num_pseudo_slices)
+        for albumentations transforms.
         """
         case_fpath, center_slice_idx_str = self.split_case_slice_idx_str(case_slice_idx_str)
         center_slice_idx = int(center_slice_idx_str)
