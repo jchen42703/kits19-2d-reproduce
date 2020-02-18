@@ -1,7 +1,8 @@
 from abc import abstractmethod
 import torch
 
-from kits19cnn.io import SliceDataset, PseudoSliceDataset
+from kits19cnn.io import SliceDataset, SliceDatasetOnTheFly, \
+                         PseudoSliceDataset, PseudoSliceDatasetOnTheFly
 from kits19cnn.models import ResUNet, ResNetSeg
 from .utils import get_training_augmentation, get_validation_augmentation, \
                    get_preprocessing
@@ -34,7 +35,7 @@ class TrainExperiment2D(TrainExperiment):
         """
         return
 
-    def get_datasets(self, train_ids, valid_ids):
+    def get_datasets(self, train_ids, val_ids):
         """
         Creates and returns the train and validation datasets.
         """
@@ -42,34 +43,41 @@ class TrainExperiment2D(TrainExperiment):
         train_aug = get_training_augmentation(self.io_params["aug_key"])
         val_aug = get_validation_augmentation(self.io_params["aug_key"])
         preprocess_t = get_preprocessing()
-        # creating the datasets
-        if self.io_params.get("pseudo_3D"):
-            train_dataset = PseudoSliceDataset(im_ids=train_ids,
-                                               in_dir=self.config["data_folder"],
-                                               transforms=train_aug,
-                                               preprocessing=preprocess_t,
-                                               num_pseudo_slices=self.io_params["num_pseudo_slices"])
-            valid_dataset = PseudoSliceDataset(im_ids=valid_ids,
-                                               in_dir=self.config["data_folder"],
-                                               transforms=val_aug,
-                                               preprocessing=preprocess_t,
-                                               num_pseudo_slices=self.io_params["num_pseudo_slices"])
-        else:
-            train_dataset = SliceDataset(im_ids=train_ids,
-                                         in_dir=self.config["data_folder"],
-                                         transforms=train_aug,
-                                         preprocessing=preprocess_t)
-            valid_dataset = SliceDataset(im_ids=valid_ids,
-                                         in_dir=self.config["data_folder"],
-                                         transforms=val_aug,
-                                         preprocessing=preprocess_t)
 
-        return (train_dataset, valid_dataset)
+        train_kwargs = {"im_ids": train_ids,
+                        "in_dir": self.config["data_folder"],
+                        "transforms": train_aug,
+                        "preprocessing": preprocess_t}
+        val_kwargs = {"im_ids": val_ids,
+                      "in_dir": self.config["data_folder"],
+                      "transforms": val_aug,
+                      "preprocessing": preprocess_t}
+
+        dset_cls_name = "SliceDataset"
+        # updating kwargs and dynamically fetching the dataset class name
+        if self.io_params.get("pseudo_3D"):
+            num_pseudo_slices = self.io_params["num_pseudo_slices"]
+            train_kwargs.update({"num_pseudo_slices": num_pseudo_slices})
+            val_kwargs.update({"num_pseudo_slices": num_pseudo_slices})
+            dset_cls_name = "PseudoSliceDataset"
+        if self.io_params["sample_on_the_fly"]:
+            sample_distr = self.io_params["sampling_distribution"]
+            train_kwargs.update({"sampling_distribution": sample_distr,
+                                 "pos_slice_dict": self._pos_slice_dict})
+            val_kwargs.update({"sampling_distribution": sample_distr,
+                               "pos_slice_dict": self._pos_slice_dict})
+            dset_cls_name = f"{dset_cls_name}OnTheFly"
+
+        # instantiating the dataset classes using the dset_cls_name
+        train_dataset = globals()[dset_cls_name](**train_kwargs)
+        val_dataset = globals()[dset_cls_name](**val_kwargs)
+
+        return (train_dataset, val_dataset)
 
 class TrainSegExperiment2D(TrainExperiment2D):
     """
     Stores the main parts of a segmentation experiment:
-    - df split
+    - dataset split
     - datasets
     - loaders
     - model
