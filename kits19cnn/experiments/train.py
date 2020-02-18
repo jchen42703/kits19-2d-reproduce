@@ -69,7 +69,11 @@ class TrainExperiment(object):
         self.cb_params = config["callback_params"]
         self.criterion_params = config["criterion_params"]
         # initializing the experiment components
-        self._pos_slice_dict = load_json(self.io_params["classes_per_slice_path"])
+        if self.io_params["sample_on_the_fly"]:
+            json_path = self.io_params["slice_indices_json_path"]
+        else:
+            json_path = self.io_params["classes_per_slice_path"]
+        self._pos_slice_dict = load_json(json_path)
         self.case_list = self.setup_im_ids()
         train_ids, val_ids, _ = self.get_split()
         self.train_dset, self.val_dset = self.get_datasets(sorted(train_ids),
@@ -82,7 +86,7 @@ class TrainExperiment(object):
         self.cb_list = self.get_callbacks()
 
     @abstractmethod
-    def get_datasets(self, train_ids, valid_ids):
+    def get_datasets(self, train_ids, val_ids):
         """
         Initializes the data augmentation and preprocessing transforms. Creates
         and returns the train and validation datasets.
@@ -145,9 +149,12 @@ class TrainExperiment(object):
         val_ids, test_ids = train_test_split(sorted(total_test),
                                              random_state=split_seed,
                                              test_size=0.5)
-        train_ids = self.sample_ids(train_ids)
-        val_ids = self.sample_ids(val_ids)
-        return (train_ids, val_ids, test_ids)
+
+        if not self.io_params["sample_on_the_fly"]:
+            train_ids = self.sample_ids(train_ids)
+            val_ids = self.sample_ids(val_ids)
+
+        return (sorted(train_ids), sorted(val_ids), sorted(test_ids))
 
     def get_loaders(self):
         """
@@ -158,11 +165,11 @@ class TrainExperiment(object):
         b_size, num_workers = self.io_params["batch_size"], self.io_params["num_workers"]
         train_loader = DataLoader(self.train_dset, batch_size=b_size,
                                   shuffle=True, num_workers=num_workers)
-        valid_loader = DataLoader(self.val_dset, batch_size=b_size,
+        val_loader = DataLoader(self.val_dset, batch_size=b_size,
                                   shuffle=False, num_workers=num_workers)
 
         self.train_steps = len(self.train_dset) # for schedulers
-        return {"train": train_loader, "valid": valid_loader}
+        return {"train": train_loader, "valid": val_loader}
 
     def get_opt(self):
         """
