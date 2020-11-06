@@ -1,4 +1,4 @@
-from kits19cnn.inference import Evaluator
+from kits19cnn.inference import GlobalMetricsEvaluator
 
 def main(config):
     """
@@ -9,8 +9,11 @@ def main(config):
     Returns:
         None
     """
-    evaluator = Evaluator(config["orig_img_dir"], config["pred_dir"],
-                          label_file_ending=config["label_file_ending"])
+    evaluator = GlobalMetricsEvaluator(config["orig_img_dir"],
+                                       config["pred_dir"],
+                                       label_file_ending=config["label_file_ending"],
+                                       binary_tumor=config["binary_tumor"],
+                                       num_classes=config["num_classes"])
     evaluator.evaluate_all(print_metrics=config["print_metrics"])
 
 if __name__ == "__main__":

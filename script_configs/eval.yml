@@ -3,3 +3,4 @@
     label_file_ending: .npy
     print_metrics: False
     binary_tumor: False
+    num_classes: 3

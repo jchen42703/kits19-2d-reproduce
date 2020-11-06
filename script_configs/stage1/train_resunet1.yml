@@ -12,7 +12,10 @@
     batch_size: 32
     num_workers: 2
     aug_key: resunet1
-    classes_per_slice_path: /content/kits_preprocessed/classes_per_slice.json
+    # classes_per_slice_path is for when sample_on_the_fly is False
+    classes_per_slice_path: ~ #/content/kits_preprocessed/classes_per_slice.json
+    slice_indices_json_path: /content/kits_preprocessed/slice_indices.json
+    sample_on_the_fly: True
     sampling_distribution:
       - 0.33
       - 0.33
@@ -21,8 +24,8 @@
     num_pseudo_slices: 5
 
   criterion_params:
-    loss: CrossEntropyLoss
-    CrossEntropyLoss:
+    loss: CrossentropyND
+    CrossentropyND:
       weight:
         - 0.3
         - 1.0

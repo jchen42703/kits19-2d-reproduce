@@ -7,7 +7,10 @@ from os.path import isdir, join
 from pathlib import Path
 
 from kits19cnn.metrics import evaluate_official
+from kits19cnn.io import PredictionDataset
 from sklearn.metrics import precision_recall_fscore_support
+
+from .multiclass_dice_meter import MultiClassDiceMeter
 
 class Evaluator(object):
     """
@@ -17,7 +20,7 @@ class Evaluator(object):
     def __init__(self, orig_img_dir, pred_dir, cases=None,
                  label_file_ending=".npy", binary_tumor=False):
         """
-        Attributes:
+        Args:
             orig_img_dir: path to the directory containing the
                 labels to evaluate with
                 i.e. original kits19/data directory or the preprocessed imgs
@@ -38,24 +41,28 @@ class Evaluator(object):
             label_file_ending (str): one of ['.npy', '.nii', '.nii.gz']
             binary_tumor (bool): whether or not to treat predicted 1s as tumor
         """
-        self.orig_img_dir = orig_img_dir
         self.pred_dir = pred_dir
-        self.file_ending = label_file_ending
-        assert self.file_ending in [".npy", ".nii", ".nii.gz"], \
-            "label_file_ending must be one of [''.npy', '.nii', '.nii.gz']"
+        assert label_file_ending in [".npy", ".nii", ".nii.gz"], \
+            "label_file_ending must be one of ['.npy', '.nii', '.nii.gz']"
         # converting cases from filepaths to raw folder names
         if cases is None:
-            self.cases_raw = [case \
-                              for case in os.listdir(self.pred_dir) \
-                              if case.startswith("case")]
+            self.cases_raw = sorted([case \
+                                     for case in os.listdir(self.pred_dir) \
+                                     if case.startswith("case")])
             assert len(self.cases_raw) > 0, \
                 "Please make sure that pred_dir has the case folders"
         elif cases is not None:
             # extracting raw cases from filepath cases
             cases_raw = [Path(case).name for case in cases]
             # filtering them down to only cases in pred_dir
-            self.cases_raw = [case for case in cases_raw \
-                              if isdir(join(self.pred_dir, case))]
+            self.cases_raw = sorted([case for case in cases_raw \
+                                     if isdir(join(self.pred_dir, case))])
+
+        self.dset = PredictionDataset(in_dir=orig_img_dir, pred_dir=pred_dir,
+                                      im_ids=self.cases_raw,
+                                      file_ending=label_file_ending,
+                                      pred_prefix="pred", load_labels=True)
+
         self.binary_tumor = binary_tumor
         if self.binary_tumor:
             print("Evaluating predicted 1s as tumor (changed to 2).")
@@ -74,9 +81,10 @@ class Evaluator(object):
                         "fpr": [], "orig_shape": [],
                         "support": [], "pred_support": []}
 
-        for case in tqdm(self.cases_raw):
-            # loading the necessary arrays
-            label, pred = self.load_masks_and_pred(case)
+        for case, batch in tqdm(zip(self.cases_raw, self.dset),
+                                total=len(self.cases_raw)):
+            pred, label = self.post_process(*batch)
+
             metrics_dict = self.eval_all_metrics_per_case(metrics_dict, label,
                                                           pred, case,
                                                           print_metrics)
@@ -87,25 +95,22 @@ class Evaluator(object):
         print(f"Saving {metrics_path}...")
         df.to_csv(metrics_path)
 
-    def load_masks_and_pred(self, case):
+    def post_process(self, pred, label):
         """
-        Loads mask and prediction from `case`
+        Processes mask and prediction from `case`. Runs the check for
+        `binary_tumor` and squeezes out the extra channel dimensions.
         Args:
             case (str): case folder names to use
         Returns:
-            label (np.ndarray): shape (x, y, z)
             pred (np.ndarray): shape (x, y, z)
+            label (np.ndarray): shape (x, y, z)
         """
-        y_path = join(self.orig_img_dir, case, f"segmentation{self.file_ending}")
-        if self.file_ending == ".npy":
-            label = np.load(y_path)
-        elif self.file_ending == ".nii.gz" or self.file_ending == ".nii":
-            label = nib.load(y_path).get_fdata()
-        pred = np.load(join(self.pred_dir, case, "pred.npy")).squeeze()
+        pred = pred.detach().cpu().numpy()
+        label = label.detach().cpu().numpy()
+
         if self.binary_tumor:
-            # treating prediced 1s as tumor (2)
             pred[pred == 1] = 2
-        return (label, pred)
+        return (pred.squeeze(), label.squeeze())
 
     def eval_all_metrics_per_case(self, metrics_dict, y_true, y_pred,
                                   case, print_metrics=False):
@@ -166,4 +171,87 @@ class Evaluator(object):
             else:
                 metrics_dict[key] = np.round(metrics_dict[key],
                                              decimals=3).tolist()
+        return metrics_dict
+
+class GlobalMetricsEvaluator(Evaluator):
+    """
+    Evaluates all of the predictions in a user-specified directory and logs
+    them in a csv. Assumes that the output is in the KiTS19 file structure.
+    This does the job of Evaluator and also tracks global metrics.
+    """
+    def __init__(self, orig_img_dir, pred_dir, cases=None,
+                 label_file_ending=".npy", binary_tumor=False,
+                 num_classes=3):
+        """
+        Args:
+            orig_img_dir: path to the directory containing the
+                labels to evaluate with
+                i.e. original kits19/data directory or the preprocessed imgs
+                directory
+                assumes structure:
+                orig_img_dir
+                    case_xxxxx
+                        imaging{file_ending}
+                        segmentation{file_ending}
+            pred_dir: path to the predictions directory, created by Predictor
+                assumes structure:
+                pred_dir
+                    case_xxxxx
+                        pred.npy
+                        act.npy
+            cases: list of filepaths to case folders or just case folder names.
+                Defaults to None.
+            label_file_ending (str): one of ['.npy', '.nii', '.nii.gz']
+            binary_tumor (bool): whether or not to treat predicted 1s as tumor
+        """
+        super().__init__(orig_img_dir=orig_img_dir, pred_dir=pred_dir,
+                         cases=cases, label_file_ending=label_file_ending,
+                         binary_tumor=binary_tumor)
+
+        self.meter = MultiClassDiceMeter(num_classes=num_classes)
+
+    def evaluate_all(self, print_metrics=False):
+        """
+        Evaluates all cases and creates the results.csv, which stores all of
+        the metrics and the averages.
+        Args:
+            print_metrics (bool): whether or not to print metrics.
+                Defaults to False to be cleaner with tqdm.
+        """
+        metrics_dict = {"cases": [],
+                        "tk_dice": [], "tu_dice": [],
+                        "precision": [], "recall": [],
+                        "fpr": [], "orig_shape": [],
+                        "support": [], "pred_support": []}
+
+        for case, batch in tqdm(zip(self.cases_raw, self.dset),
+                                total=len(self.cases_raw)):
+            pred, label = self.post_process(*batch)
+            self.meter.add(pred, label)
+            metrics_dict = self.eval_all_metrics_per_case(metrics_dict, label,
+                                                          pred, case,
+                                                          print_metrics)
+        metrics_dict = self.round_all(self.average_all_cases_per_metric(metrics_dict))
+        metrics_dict = self.add_global_metrics(metrics_dict)
+
+        df = pd.DataFrame(metrics_dict)
+        metrics_path = join(self.pred_dir, "results.csv")
+        print(f"Saving {metrics_path}...")
+        df.to_csv(metrics_path)
+
+    def add_global_metrics(self, metrics_dict):
+        """
+        Adding the global metrics to metrics dict.
+        """
+        metrics_dict["cases"].append("global")
+        metrics_dict["tk_dice"].append(np.round(self.meter.value()[1],
+                                                decimals=3))
+        metrics_dict["tu_dice"].append(np.round(self.meter.value()[2],
+                                                decimals=3))
+        for key in list(metrics_dict.keys()):
+            if key in ["cases", "tk_dice", "tu_dice"]:
+                continue
+            else:
+                metrics_dict[key].append(None)
+
         return metrics_dict

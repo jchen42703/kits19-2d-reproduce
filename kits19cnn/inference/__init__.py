@@ -1,4 +1,4 @@
-from .evaluate import Evaluator
+from .evaluate import Evaluator, GlobalMetricsEvaluator
 from .utils import create_submission, load_weights_infer, \
                    remove_3D_connected_components
 from .ensemble import Ensembler
